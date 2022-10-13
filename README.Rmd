@@ -1,0 +1,175 @@
+---
+output: github_document
+---
+
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  out.width = "100%",
+  dpi = 300
+)
+```
+
+## Setup
+
+You can install the developer version of e2tree from [GitHub](https://github.com) with:
+
+```{r eval=FALSE}
+install.packages("remotes")
+remotes::install_github("massimoaria/e2tree")
+```
+
+```{r warning=FALSE, message=FALSE}
+require(e2tree)
+require(tidyverse)
+options(dplyr.summarise.inform = FALSE)
+require(randomForest)
+require(Matrix)
+require(future.apply)
+```
+
+```{r set-theme, include=FALSE}
+theme_set(
+  theme_classic() +
+    theme(
+      plot.background = element_rect(fill = "transparent", colour = NA),
+      panel.background = element_rect(fill = "transparent", colour = NA)
+    )
+)
+knitr::opts_chunk$set(dev.args = list(bg = "transparent"))
+```
+
+## Warnings
+
+The package is still under development and therefore, for the time being, there are the following limitations:
+
+- Only ensembles trained with the randomforest package are supported. Additional packages and approaches will be supported in the future;
+
+- Currently e2tree works only in the case ofu classification problems. It will gradually be extended to other problems related to the nature of the response variable: regression, counting, multivariate response, etc.
+
+
+## Example 1: IRIS dataset
+
+In this example, we want to show the main functions of the e2tree package.
+
+Starting from the IRIS dataset, we will train an ensemble tree using the randomforest package and then subsequently use e2tree to obtain an explainable tree synthesis of the ensemble classifier.
+
+```{r}
+# Set random seed to make results reproducible:
+set.seed(0)
+# Calculate the size of each of the data sets:
+data_set_size <- floor(nrow(iris)/2)
+# Generate a random sample of "data_set_size" indexes
+indexes <- sample(1:nrow(iris), size = data_set_size)
+# Assign the data to the correct sets
+training <- iris[indexes,]
+validation <- iris[-indexes,]
+response_training <- training[,5]
+response_validation <- validation[,5]
+```
+
+
+Train an Random Forest model with 1000 weak learners
+
+```{r}
+# Perform training:
+rf = randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag = TRUE, proximity=T)
+```
+
+Here, we create the dissimilarity matrix between observations through the createDisMatrix function
+
+```{r}
+D <- createDisMatrix(rf, data=training)
+#dis <- 1-rf$proximity
+```
+
+setting e2tree parameters
+
+```{r}
+setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
+```
+
+
+Costruisco l'albero sintesi del RF
+
+
+```{r}
+tree <- e2tree(D, training[,-5], response_training, setting)
+```
+
+
+Un'occhiata all'oggetto info1
+```{r}
+tree %>% knitr::kable()
+```
+Predizione con il nuovo albero (esempio sul training)
+```{r}
+pred <- ePredTree(tree, training[,-5], target="virginica")
+```
+
+Comparazione tra le predizioni (campione training) di RF e eTree
+```{r}
+table(pred$fit,rf$predicted)
+```
+
+Comparazione tra le predizioni (campione training) di RF e risposta corretta
+```{r}
+table(rf$predicted, response_training)
+```
+
+Comparazione tra le predizioni (campione training) di eTree e risposta corretta
+```{r}
+table(pred$fit,response_training)
+```
+
+Variable Importance
+```{r}
+rfimp <- rf$importance %>% as.data.frame %>% 
+  mutate(Variable = rownames(rf$importance),
+         RF_Var_Imp = round(MeanDecreaseAccuracy,2)) %>% 
+  select(Variable, RF_Var_Imp)
+
+V <- vimp(tree, response_training, training[,-5])
+V <- V %>% select(.data$Variable, .data$MeanImpurityDecrease, .data$`ImpDec_ setosa`, .data$`ImpDec_ versicolor`,.data$`ImpDec_ virginica`) %>% 
+  mutate_at(c("MeanImpurityDecrease","ImpDec_ setosa", "ImpDec_ versicolor","ImpDec_ virginica"), round,2) %>% 
+  left_join(rfimp, by = "Variable") %>% 
+  select(Variable, RF_Var_Imp, MeanImpurityDecrease, starts_with("ImpDec")) %>% 
+  rename(ETree_Var_Imp = MeanImpurityDecrease)
+
+V
+  
+```
+
+
+Comparazione con il campione di validazione
+```{r}
+rf.pred <- predict(rf, validation[,-5], proximity = TRUE)
+
+pred_val<- ePredTree(tree, validation[,-5], target="virginica")
+```
+
+Comparazione tra le predizioni (campione validation) di RF e eTree
+```{r}
+table(pred_val$fit,rf.pred$predicted)
+```
+
+Comparazione tra le predizioni (campione validation) di RF e risposta corretta
+```{r}
+table(rf.pred$predicted, response_validation)
+rf.prob <- predict(rf, validation[,-5], proximity = TRUE, type="prob")
+roc_rf <- roc(response_validation,rf.prob$predicted[,"virginica"],target="virginica")
+roc_rf$auc
+```
+
+Comparazione tra le predizioni (campione validation) di eTree e risposta corretta
+```{r}
+table(pred_val$fit,response_validation)
+roc_res <- roc(response_validation,pred_val$score,target="virginica")
+roc_res$auc
+```
+
