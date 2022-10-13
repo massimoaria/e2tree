@@ -2,6 +2,7 @@
 # e2tree
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of e2tree is to ...
