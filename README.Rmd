@@ -108,7 +108,7 @@ tree <- e2tree(D, training[,-5], response_training, setting)
 
 Un'occhiata all'oggetto info1
 ```{r}
-tree %>% knitr::kable()
+tree %>% glimpse()
 ```
 Predizione con il nuovo albero (esempio sul training)
 ```{r}
