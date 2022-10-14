@@ -128,7 +128,7 @@
 <code class="sourceCode R"><span><span class="va">setting</span><span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>impTotal<span class="op">=</span><span class="fl">0.1</span>, maxDec<span class="op">=</span><span class="fl">0.01</span>, n<span class="op">=</span><span class="fl">5</span>, level<span class="op">=</span><span class="fl">5</span>, tMax<span class="op">=</span><span class="fl">5</span><span class="op">)</span></span></code></pre></div>
 <p>Costruisco l’albero sintesi del RF</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/e2tree/man/e2tree-package.html" class="external-link">e2tree</a></span><span class="op">(</span><span class="va">D</span>, <span class="va">training</span><span class="op">[</span>,<span class="op">-</span><span class="fl">5</span><span class="op">]</span>, <span class="va">response_training</span>, <span class="va">setting</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/e2tree.html">e2tree</a></span><span class="op">(</span><span class="va">D</span>, <span class="va">training</span><span class="op">[</span>,<span class="op">-</span><span class="fl">5</span><span class="op">]</span>, <span class="va">response_training</span>, <span class="va">setting</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
 <span><span class="co">#&gt; [1] 3</span></span>
