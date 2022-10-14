@@ -1,11 +1,18 @@
 Package: e2tree
-Title: What the Package Does (One Line, Title Case)
+Title: Creating An Explainable Tree From An Ensemble Tree Structure
 Version: 0.0.0.9000
-Authors@R: 
-    person("Massimo", "Aria", , "massimo.aria@gmail.com", role = c("aut", "cre"),
+Authors@R: c(
+    person(given = "Massimo",
+           family = "Aria",
+           role = c("aut", "cre", "cph"),
+           email = "aria@unina.it",
            comment = c(ORCID = "0000-0002-8517-9411"))
-Description: What the package does (one paragraph).
+           )
+Description: e2tree implements a methodological proposal to provide 
+      an explanable tree structure for ensemble tree methods.
 License: MIT + file LICENSE
+URL: https://github.com/massimoaria/e2tree
+BugReports: https://github.com/massimoaria/e2tree/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
