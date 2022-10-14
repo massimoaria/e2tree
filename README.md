@@ -108,18 +108,29 @@ tree <- e2tree(D, training[,-5], response_training, setting)
 Un’occhiata all’oggetto info1
 
 ``` r
-tree %>% knitr::kable()
+tree %>% glimpse()
+#> Rows: 7
+#> Columns: 19
+#> $ node          <dbl> 1, 2, 3, 6, 7, 12, 13
+#> $ n             <int> 75, 29, 46, 20, 26, 16, 4
+#> $ pred          <chr> "setosa", "setosa", "virginica", "versicolor", "virginic…
+#> $ prob          <chr> "0.386666666666667", "1", "0.58695652173913", "0.95", "1…
+#> $ impTotal      <dbl> 0.69895205, 0.01628657, 0.58135876, 0.31262187, 0.129637…
+#> $ impChildren   <dbl> 0.3628642, NA, 0.2091960, 0.2283824, NA, NA, NA
+#> $ decImp        <dbl> 0.33608788, NA, 0.37216271, 0.08423945, NA, NA, NA
+#> $ decImpSur     <dbl> 0.24963733, NA, 0.33018530, 0.02263852, NA, NA, NA
+#> $ variable      <chr> "Petal.Length", NA, "Petal.Width", "Petal.Length", NA, N…
+#> $ split         <dbl> 53, NA, 92, 64, NA, NA, NA
+#> $ splitLabel    <chr> "Petal.Length <=1.9", NA, "Petal.Width <=1.7", "Petal.Le…
+#> $ variableSur   <chr> "Petal.Width", NA, "Petal.Length", "Petal.Width", NA, NA…
+#> $ splitLabelSur <chr> "Petal.Width <=0.6", NA, "Petal.Length <=4.7", "Petal.Wi…
+#> $ parent        <dbl> 0, 1, 1, 3, 3, 6, 6
+#> $ children      <list> <2, 3>, NA, <6, 7>, <12, 13>, NA, NA, NA
+#> $ terminal      <lgl> FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE
+#> $ obs           <list> <1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, …
+#> $ path          <chr> "", "Petal.Length <=1.9", "!Petal.Length <=1.9", "!Petal…
+#> $ pred_val      <dbl> 1, 1, 3, 2, 3, 2, 2
 ```
-
-| node |   n | pred       | prob              |  impTotal | impChildren |    decImp | decImpSur | variable     | split | splitLabel          | variableSur  | splitLabelSur       | parent | children | terminal | obs                                                                                                                                                                                                                                                                                               | path                                                             | pred_val |
-|-----:|----:|:-----------|:------------------|----------:|------------:|----------:|----------:|:-------------|------:|:--------------------|:-------------|:--------------------|-------:|:---------|:---------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------|---------:|
-|    1 |  75 | setosa     | 0.386666666666667 | 0.6989521 |   0.3628642 | 0.3360879 | 0.2496373 | Petal.Length |    53 | Petal.Length \<=1.9 | Petal.Width  | Petal.Width \<=0.6  |      0 | 2, 3     | FALSE    | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75 |                                                                  |        1 |
-|    2 |  29 | setosa     | 1                 | 0.0162866 |          NA |        NA |        NA | NA           |    NA | NA                  | NA           | NA                  |      1 | NA       | TRUE     | 4, 5, 8, 11, 14, 17, 21, 23, 26, 27, 29, 30, 32, 35, 37, 39, 42, 43, 44, 46, 47, 48, 49, 57, 60, 62, 64, 72, 73                                                                                                                                                                                   | Petal.Length \<=1.9                                              |        1 |
-|    3 |  46 | virginica  | 0.58695652173913  | 0.5813588 |   0.2091960 | 0.3721627 | 0.3301853 | Petal.Width  |    92 | Petal.Width \<=1.7  | Petal.Length | Petal.Length \<=4.7 |      1 | 6, 7     | FALSE    | 1, 2, 3, 6, 7, 9, 10, 12, 13, 15, 16, 18, 19, 20, 22, 24, 25, 28, 31, 33, 34, 36, 38, 40, 41, 45, 50, 51, 52, 53, 54, 55, 56, 58, 59, 61, 63, 65, 66, 67, 68, 69, 70, 71, 74, 75                                                                                                                  | !Petal.Length \<=1.9                                             |        3 |
-|    6 |  20 | versicolor | 0.95              | 0.3126219 |   0.2283824 | 0.0842395 | 0.0226385 | Petal.Length |    64 | Petal.Length \<=4.7 | Petal.Width  | Petal.Width \<=1.5  |      3 | 12, 13   | FALSE    | 2, 6, 7, 10, 12, 13, 20, 22, 24, 33, 50, 51, 54, 55, 56, 61, 65, 68, 69, 75                                                                                                                                                                                                                       | !Petal.Length \<=1.9 & Petal.Width \<=1.7                        |        2 |
-|    7 |  26 | virginica  | 1                 | 0.1296377 |          NA |        NA |        NA | NA           |    NA | NA                  | NA           | NA                  |      3 | NA       | TRUE     | 1, 3, 9, 15, 16, 18, 19, 25, 28, 31, 34, 36, 38, 40, 41, 45, 52, 53, 58, 59, 63, 66, 67, 70, 71, 74                                                                                                                                                                                               | !Petal.Length \<=1.9 & !Petal.Width \<=1.7                       |        3 |
-|   12 |  16 | versicolor | 1                 | 0.1525959 |          NA |        NA |        NA | NA           |    NA | NA                  | NA           | NA                  |      6 | NA       | TRUE     | 2, 6, 7, 10, 13, 20, 24, 33, 51, 54, 55, 56, 61, 65, 68, 75                                                                                                                                                                                                                                       | !Petal.Length \<=1.9 & Petal.Width \<=1.7 & Petal.Length \<=4.7  |        2 |
-|   13 |   4 | versicolor | 0.75              | 0.5315285 |          NA |        NA |        NA | NA           |    NA | NA                  | NA           | NA                  |      6 | NA       | TRUE     | 12, 22, 50, 69                                                                                                                                                                                                                                                                                    | !Petal.Length \<=1.9 & Petal.Width \<=1.7 & !Petal.Length \<=4.7 |        2 |
 
 Predizione con il nuovo albero (esempio sul training)
 
