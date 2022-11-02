@@ -126,7 +126,7 @@
 <p>setting e2tree parameters</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">setting</span><span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>impTotal<span class="op">=</span><span class="fl">0.1</span>, maxDec<span class="op">=</span><span class="fl">0.01</span>, n<span class="op">=</span><span class="fl">5</span>, level<span class="op">=</span><span class="fl">5</span>, tMax<span class="op">=</span><span class="fl">5</span><span class="op">)</span></span></code></pre></div>
-<p>Costruisco l’albero sintesi del RF</p>
+<p>Build an explainable tree for RF</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/e2tree.html">e2tree</a></span><span class="op">(</span><span class="va">D</span>, <span class="va">training</span><span class="op">[</span>,<span class="op">-</span><span class="fl">5</span><span class="op">]</span>, <span class="va">response_training</span>, <span class="va">setting</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1</span></span>
@@ -136,7 +136,7 @@
 <span><span class="co">#&gt; [1] 13</span></span>
 <span><span class="co">#&gt; [1] 12</span></span>
 <span><span class="co">#&gt; [1] 7</span></span></code></pre></div>
-<p>Un’occhiata all’oggetto info1</p>
+<p>Let’s have a look at the output</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tree</span> <span class="op">%&gt;%</span> <span class="fu">glimpse</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Rows: 7</span></span>
@@ -160,14 +160,14 @@
 <span><span class="co">#&gt; $ obs           &lt;list&gt; &lt;1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, …</span></span>
 <span><span class="co">#&gt; $ path          &lt;chr&gt; "", "Petal.Length &lt;=1.9", "!Petal.Length &lt;=1.9", "!Petal…</span></span>
 <span><span class="co">#&gt; $ pred_val      &lt;dbl&gt; 1, 1, 3, 2, 3, 2, 2</span></span></code></pre></div>
-<p>Predizione con il nuovo albero (esempio sul training)</p>
+<p>Prediction with the new tree (example on training)</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ePredTree.html">ePredTree</a></span><span class="op">(</span><span class="va">tree</span>, <span class="va">training</span><span class="op">[</span>,<span class="op">-</span><span class="fl">5</span><span class="op">]</span>, target<span class="op">=</span><span class="st">"virginica"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
 <span><span class="co">#&gt; [1] 3</span></span>
 <span><span class="co">#&gt; [1] 4</span></span></code></pre></div>
-<p>Comparazione tra le predizioni (campione training) di RF e eTree</p>
+<p>Comparison of predictions (training sample) of RF and e2tree</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pred</span><span class="op">$</span><span class="va">fit</span>,<span class="va">rf</span><span class="op">$</span><span class="va">predicted</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             </span></span>
@@ -175,7 +175,7 @@
 <span><span class="co">#&gt;   setosa         29          0         0</span></span>
 <span><span class="co">#&gt;   versicolor      0         18         2</span></span>
 <span><span class="co">#&gt;   virginica       0          0        26</span></span></code></pre></div>
-<p>Comparazione tra le predizioni (campione training) di RF e risposta corretta</p>
+<p>Comparison of predictions (training sample) of RF and correct response</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">rf</span><span class="op">$</span><span class="va">predicted</span>, <span class="va">response_training</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             response_training</span></span>
@@ -183,7 +183,7 @@
 <span><span class="co">#&gt;   setosa         29          0         0</span></span>
 <span><span class="co">#&gt;   versicolor      0         17         1</span></span>
 <span><span class="co">#&gt;   virginica       0          2        26</span></span></code></pre></div>
-<p>Comparazione tra le predizioni (campione training) di eTree e risposta corretta</p>
+<p>Comparison of predictions (training sample) of e2tree and correct response</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pred</span><span class="op">$</span><span class="va">fit</span>,<span class="va">response_training</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             response_training</span></span>
@@ -214,7 +214,7 @@
 <span><span class="co">#&gt; 1 Petal.Length       0.27          0.36             0.34                 0.02</span></span>
 <span><span class="co">#&gt; 2 Petal.Width        0.34          0.23            NA                   NA   </span></span>
 <span><span class="co">#&gt; # … with 1 more variable: `ImpDec_ virginica` &lt;dbl&gt;</span></span></code></pre></div>
-<p>Comparazione con il campione di validazione</p>
+<p>Comparison with the validation sample</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rf.pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">rf</span>, <span class="va">validation</span><span class="op">[</span>,<span class="op">-</span><span class="fl">5</span><span class="op">]</span>, proximity <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
@@ -223,7 +223,7 @@
 <span><span class="co">#&gt; [1] 2</span></span>
 <span><span class="co">#&gt; [1] 3</span></span>
 <span><span class="co">#&gt; [1] 4</span></span></code></pre></div>
-<p>Comparazione tra le predizioni (campione validation) di RF e eTree</p>
+<p>Comparison of predictions (sample validation) of RF and e2tree</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pred_val</span><span class="op">$</span><span class="va">fit</span>,<span class="va">rf.pred</span><span class="op">$</span><span class="va">predicted</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             </span></span>
@@ -231,7 +231,7 @@
 <span><span class="co">#&gt;   setosa         21          0         0</span></span>
 <span><span class="co">#&gt;   versicolor      0         34         0</span></span>
 <span><span class="co">#&gt;   virginica       0          0        20</span></span></code></pre></div>
-<p>Comparazione tra le predizioni (campione validation) di RF e risposta corretta</p>
+<p>Comparison of predictions (validation sample) of RF and correct response</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">rf.pred</span><span class="op">$</span><span class="va">predicted</span>, <span class="va">response_validation</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             response_validation</span></span>
@@ -245,7 +245,7 @@
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">roc_rf</span><span class="op">$</span><span class="va">auc</span></span>
 <span><span class="co">#&gt; [1] 0.9873725</span></span></code></pre></div>
-<p>Comparazione tra le predizioni (campione validation) di eTree e risposta corretta</p>
+<p>Comparison of predictions (validation sample) of e2tree and correct response</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pred_val</span><span class="op">$</span><span class="va">fit</span>,<span class="va">response_validation</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             response_validation</span></span>
