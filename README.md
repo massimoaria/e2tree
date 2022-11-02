@@ -92,7 +92,7 @@ setting e2tree parameters
 setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
 ```
 
-Costruisco l’albero sintesi del RF
+Build an explainable tree for RF 
 
 ``` r
 tree <- e2tree(D, training[,-5], response_training, setting)
@@ -105,7 +105,7 @@ tree <- e2tree(D, training[,-5], response_training, setting)
 #> [1] 7
 ```
 
-Un’occhiata all’oggetto info1
+Let's have a look at the output
 
 ``` r
 tree %>% glimpse()
@@ -132,7 +132,7 @@ tree %>% glimpse()
 #> $ pred_val      <dbl> 1, 1, 3, 2, 3, 2, 2
 ```
 
-Predizione con il nuovo albero (esempio sul training)
+Prediction with the new tree (example on training)
 
 ``` r
 pred <- ePredTree(tree, training[,-5], target="virginica")
@@ -142,7 +142,7 @@ pred <- ePredTree(tree, training[,-5], target="virginica")
 #> [1] 4
 ```
 
-Comparazione tra le predizioni (campione training) di RF e eTree
+Comparison of predictions (training sample) of RF and e2tree
 
 ``` r
 table(pred$fit,rf$predicted)
@@ -153,8 +153,7 @@ table(pred$fit,rf$predicted)
 #>   virginica       0          0        26
 ```
 
-Comparazione tra le predizioni (campione training) di RF e risposta
-corretta
+Comparison of predictions (training sample) of RF and correct response
 
 ``` r
 table(rf$predicted, response_training)
@@ -165,8 +164,7 @@ table(rf$predicted, response_training)
 #>   virginica       0          2        26
 ```
 
-Comparazione tra le predizioni (campione training) di eTree e risposta
-corretta
+Comparison of predictions (training sample) of e2tree and correct response
 
 ``` r
 table(pred$fit,response_training)
@@ -206,7 +204,7 @@ V
 #> # … with 1 more variable: `ImpDec_ virginica` <dbl>
 ```
 
-Comparazione con il campione di validazione
+Comparison with the validation sample
 
 ``` r
 rf.pred <- predict(rf, validation[,-5], proximity = TRUE)
@@ -218,7 +216,7 @@ pred_val<- ePredTree(tree, validation[,-5], target="virginica")
 #> [1] 4
 ```
 
-Comparazione tra le predizioni (campione validation) di RF e eTree
+Comparison of predictions (sample validation) of RF and e2tree
 
 ``` r
 table(pred_val$fit,rf.pred$predicted)
@@ -229,8 +227,7 @@ table(pred_val$fit,rf.pred$predicted)
 #>   virginica       0          0        20
 ```
 
-Comparazione tra le predizioni (campione validation) di RF e risposta
-corretta
+Comparison of predictions (validation sample) of RF and correct response
 
 ``` r
 table(rf.pred$predicted, response_validation)
@@ -250,8 +247,7 @@ roc_rf$auc
 #> [1] 0.9873725
 ```
 
-Comparazione tra le predizioni (campione validation) di eTree e risposta
-corretta
+Comparison of predictions (validation sample) of e2tree and correct response
 
 ``` r
 table(pred_val$fit,response_validation)
