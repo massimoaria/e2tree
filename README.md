@@ -5,7 +5,16 @@
 [![R-CMD-check](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-## Setup
+# Explainable Ensemble Trees (E2Tree)
+
+The Explainable Ensemble Trees (E2Tree) key idea consists of the definition of an algorithm to represent every ensemble approach based on decision trees model using a single tree-like structure.
+The goal is to explain the results from the esemble algorithm while preserving its level of accuracy, which always outperforms those provided by a decision tree. The proposed method is based on identifying the relationship tree-like structure explaining the classification or regression paths summarizing the whole ensemble process. There are two main advantages of E2Tree:  
+ - building an explainable tree that ensures the predictive performance of an RF model 
+ - allowing the decision-maker to manage with an intuitive structure (such as a tree-like structure).
+ 
+In this example, we focus on Random Forest but, again, the algorithm can be generalized to every ensemble approach based on decision trees.
+
+### Setup
 
 You can install the developer version of e2tree from
 [GitHub](https://github.com) with:
