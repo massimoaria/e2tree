@@ -4,10 +4,10 @@
 \alias{rpart2Tree}
 \title{Convert a e2tree into an rpart object}
 \usage{
-rpart2Tree(tree)
+rpart2Tree(fit)
 }
 \arguments{
-\item{tree}{is e2tree object}
+\item{fit}{is e2tree object}
 }
 \value{
 an rpart object.

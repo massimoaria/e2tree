@@ -40,7 +40,7 @@ catSplit <- function(x){
   if (length(values)>2){  #Multinomial variables
 
     # generate all partitions
-    p <- listParts(length(values),do.set=F)
+    p <- partitions::listParts(length(values),do.set=F)
 
     # remove not binary partitions
     s <- lapply(p, function(x){
@@ -99,3 +99,4 @@ ordSplit <- function(x){
     return()
   }
 }
+

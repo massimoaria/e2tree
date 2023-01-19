@@ -18,6 +18,14 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
 
   for (i in 1:setting$level) setting$tMax=setting$tMax*2+1
 
+  # identify qualitative variable and the number of categories
+  var_classes <- unlist(lapply(X,class))
+  ind <- which(var_classes %in% c("factor","character"))
+  ncat <- (apply(X[,ind],2, function(x) length(unique(x))))
+  var_classes[names(ncat)] = ncat
+  var_classes[!names(var_classes) %in% names(ncat)] = -1
+  var_classes <- as.numeric(var_classes)
+  names(var_classes) <- names(X)
 
   ## Generate the split matrix S from the original predictor matrix X
   res <- split(X)
@@ -32,7 +40,7 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
   nterm <- 1
   m <- unique(response)
   m_label <- paste("V", seq(1,length(m)*2), sep="")
-  labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur","variable" ,"split", "splitLabel", "variableSur", "splitLabelSur","parent","children","terminal", "obs", "path", m_label)
+  labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur","variable" ,"split", "splitLabel", "variableSur", "splitLabelSur","parent","children","terminal", "obs", "path", "ncat",m_label)
   info <- data.frame(matrix(NA,setting$tMax,length(labels)))
   names(info) <- labels
   indv <- (ncol(info)-length(m_label)+1):ncol(info)
@@ -114,6 +122,8 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
         info$impTotal[t] <- results$impTotal
         info$obs[t] <- list(index)
         info$path[t] <- paths(info,t)
+        info$variable[t] <- gsub(" <=.*| %in%.*","",info$splitLabel[t])
+        info$ncat[t] <- var_classes[info$variable[t]]
 
         nodes[index] <- (nodes[index]*2+1)-S[index,s]
         nterm <- c(nterm, unique(nodes[index]))
@@ -125,19 +135,22 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
   }
   info <- info %>% drop_na(.data$node)
   info$pred_val <- as.numeric(factor(info$pred))
-  info$variable <- gsub(" <=.*| %in%.*","",info$splitLabel)
   info$variableSur <- gsub(" <=.*| %in%.*","",info$splitLabelSur)
-
-  #info$yval2.V1 <- info$pred
 
   yval2 <- as.matrix(info[,indv])
   ypred <- info$pred_val
   nodeprob <- info$n/first(info$n)
   info <- info[,-indv]
 
-  info$yval2 <- cbind(ypred, yval2, nodeprob)
+  #info$yval2 <- cbind(ypred, yval2, nodeprob)
+  yval2 <- cbind(ypred,yval2)
+  #names(yval2) <- paste("V",seq(ncol(yval2)),sep="")
+  attr(yval2,"dimnames")[[2]] <- paste("V",seq(ncol(yval2)),sep="")
+  info$yval2 <- cbind(yval2, nodeprob)
 
-  return(info)
+  object <- csplit_str(info,X,ncat)
+
+  return(object)
 }
 
 
@@ -156,8 +169,61 @@ paths <- function(info,t){
 }
 
 
+### creation objects for rpart.plot ----
+csplit_str <- function(info,X,ncat){
+
+  var_lev <- attribute <- list()
+  for (i in names(ncat)){
+    var_lev[[i]] <- seq(ncat[i])
+    names(var_lev[[i]]) <- unique(X[,i])
+    attribute[[i]] <- as.character(unique(X[,i]))
+  }
+
+  #qualitative splits
+  splits <- info %>%
+    dplyr::filter(!is.na(variable)) %>%
+    dplyr::select(n,ncat,variable,decImp, splitLabel)
+
+  #splits <- info[!is.na(info$variable), c("n","ncat","variable","decImp", "splitLabel")]
+
+  splits$index <- suppressWarnings(as.numeric(as.numeric(gsub("[^[:digit:]., ]", "",splits$splitLabel))))
+  splits$index[splits$ncat!=-1] <- seq(sum(splits$ncat!=-1))
+
+  catsplits <- splits %>%
+    dplyr::filter(ncat!=-1) %>%
+    dplyr::mutate(ID = row_number()) %>%
+    dplyr::group_by(ID) %>%
+    dplyr::mutate(modal = gsub(paste0(variable," %in% "),"",splitLabel))
+
+  splits <- splits %>%
+    #data.frame() %>%
+    dplyr::select(n,ncat,decImp,index) %>%
+    dplyr::rename(improve = decImp,
+           count = n) %>%
+    dplyr::mutate(adj=0) %>%
+    as.matrix()
+
+  attr(splits,"dimnames")[[1]]  <- info$variable[!is.na(info$variable)]
+
+  ### creation of csplit
+  csplit <- matrix(2,nrow(catsplits),max(catsplits$ncat))
+
+  for (i in 1:nrow(csplit)){
+    modal <- eval(parse(text=catsplits$modal[i]))
+    vec <- var_lev[[catsplits$variable[i]]]
+    ind <- vec[modal]
+    csplit[i,ind] <- 1
+    ind <- vec[setdiff(names(vec),modal)]
+    csplit[i,ind] <- 3
+  }
 
 
+  object <- list(tree=info, csplit=as.matrix(csplit),splits=splits)
+
+  attr(object,"xlevels") <- attribute
+
+  return(object)
+}
 
 #do.call("rbind", lapply(info, "[[", 1))
 

@@ -9,7 +9,7 @@ utils::globalVariables(".")
 #' @importFrom dplyr tibble
 #' @importFrom dplyr as_tibble
 #' @importFrom dplyr between
-## @importFrom dplyr filter
+#' @importFrom dplyr first
 #' @importFrom dplyr arrange
 #' @importFrom dplyr do
 #' @importFrom dplyr n
@@ -41,6 +41,7 @@ utils::globalVariables(".")
 #' @importFrom dplyr slice_tail
 #' @importFrom dplyr starts_with
 #' @importFrom dplyr group_by_at
+#' @importFrom tidyr complete
 #' @importFrom tidyr drop_na
 #' @importFrom tidyr pivot_longer
 #' @importFrom tidyr pivot_wider
