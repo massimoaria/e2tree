@@ -30,9 +30,12 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
 
   # list of no-terminal nodes
   nterm <- 1
-  labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur","variable" ,"split", "splitLabel", "variableSur", "splitLabelSur","parent","children","terminal", "obs", "path")
+  m <- unique(response)
+  m_label <- paste("V", seq(1,length(m)*2), sep="")
+  labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur","variable" ,"split", "splitLabel", "variableSur", "splitLabelSur","parent","children","terminal", "obs", "path", m_label)
   info <- data.frame(matrix(NA,setting$tMax,length(labels)))
   names(info) <- labels
+  indv <- (ncol(info)-length(m_label)+1):ncol(info)
 
   while(length(nterm)>0){
 
@@ -53,6 +56,22 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
     info$parent[t] <- floor(t/2)
     info$n[t] <- length(index)
     info$impTotal[t] <- results$impTotal
+
+    ##### MODIFICO per ottenere le statistiche
+    yval <- data.frame(Y=response[index]) %>%
+      mutate(Y=factor(Y, levels=levels(m))) %>%
+      group_by(Y) %>%
+      summarize(n=n(),
+                p=n/length(response[index])) %>%
+      complete(Y, fill = list(n = 0, p = 0)) %>%
+      select(n,p) %>%
+      as.matrix() %>%
+      c()
+
+
+    info[t,indv] <- yval
+
+    ###
 
     if (isTRUE(results$sRule)){
       #list(imp=NA,decImp=NA, split=NA, splitLabel=NA, terminal=TRUE, impTotal=results$impTotal, obs=index, path=NA)
@@ -108,6 +127,15 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
   info$pred_val <- as.numeric(factor(info$pred))
   info$variable <- gsub(" <=.*| %in%.*","",info$splitLabel)
   info$variableSur <- gsub(" <=.*| %in%.*","",info$splitLabelSur)
+
+  #info$yval2.V1 <- info$pred
+
+  yval2 <- as.matrix(info[,indv])
+  ypred <- info$pred_val
+  nodeprob <- info$n/first(info$n)
+  info <- info[,-indv]
+
+  info$yval2 <- cbind(ypred, yval2, nodeprob)
 
   return(info)
 }
