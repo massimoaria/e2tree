@@ -16,8 +16,7 @@ BugReports: https://github.com/massimoaria/e2tree/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
-Imports: 
-    dplyr,
+Imports: dplyr,
     future.apply,
     ggplot2,
     Matrix,
