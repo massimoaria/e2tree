@@ -221,6 +221,7 @@ csplit_str <- function(info,X,ncat){
   object <- list(tree=info, csplit=as.matrix(csplit),splits=splits)
 
   attr(object,"xlevels") <- attribute
+  class(object) <- "rpart"
 
   return(object)
 }
