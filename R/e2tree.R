@@ -54,7 +54,7 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
         ### verifica regole di arresto
     results <- eStoppingRules(D,index, t, setting, response)
 
-    ### Calcolo risposta nel nodo (per ora solo classificazione)
+    ### Compute the response in the node 
     res <- moda(response[index])
     ###
 
@@ -65,7 +65,7 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
     info$n[t] <- length(index)
     info$impTotal[t] <- results$impTotal
 
-    ##### MODIFICO per ottenere le statistiche
+    ##### statistics
     yval <- data.frame(Y=response[index]) %>%
       mutate(Y=factor(Y, levels=levels(m))) %>%
       group_by(Y) %>%
