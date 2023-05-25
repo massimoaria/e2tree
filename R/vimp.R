@@ -15,7 +15,7 @@
 #'
 #' @export
 #'
-vimp <- function(tree, response, X, graph=TRUE){
+vimp <- function(tree, response, X){
 
   ## Calcolo decrease of Accuracy ##
   row.names(tree) <- tree$node
@@ -83,7 +83,6 @@ if (isTRUE(graph)){
     scale_y_discrete(limits = rev(vimp$Variable))+
     labs(title="Variable Importance Plot", x = "Mean Impurity Decrease", y = "Variance") +
     theme_minimal()
-  plot(pImp)
 
   pAcc <-vimp %>%
     arrange(desc(.data$MeanAccuracyDecrease), by_group=FALSE)
@@ -93,7 +92,7 @@ if (isTRUE(graph)){
     scale_y_discrete(limits = rev(pAcc$Variable))+
     labs(title="Variable Importance Plot", x = "Mean Accuracy Decrease", y = "Variance") +
     theme_minimal()
-  plot(pAcc)
 }
-return(vimp)
+res <- list(vimp=vimp, g_imp=pImp, g_acc=pAcc)
+return(res)
 }

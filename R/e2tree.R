@@ -2,9 +2,9 @@
 #'
 #' It creates an explainable tree for Random Forest
 #'
+#' @param formula
+#' @param data
 #' @param D is the dissimilarity matrix
-#' @param X is the training data frame with only the predictors
-#' @param response is the vector of responses of the training dataset
 #' @param setting is a list containing the setting parameters for tree building procedure.
 #' Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.
 #'
@@ -14,7 +14,20 @@
 #'
 #' @export
 
-e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)){
+e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)){
+
+  Call <- match.call()
+  mf <- match.call(expand.dots = FALSE)
+  m <- match(c("formula", "data"), names(mf), 0L)
+  mf <- mf[c(1L, m)]
+  mf$drop.unused.levels <- TRUE
+  mf[[1L]] <- quote(stats::model.frame)
+  mf <- eval(mf, parent.frame())
+  #Terms <- attr(mf, "terms")
+  Terms <- attributes(mf)$terms
+
+  response <- mf[,1]
+  X <- mf[,-1]
 
   for (i in 1:setting$level) setting$tMax=setting$tMax*2+1
 
@@ -45,16 +58,19 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
   names(info) <- labels
   indv <- (ncol(info)-length(m_label)+1):ncol(info)
 
+  N <- NULL
+
   while(length(nterm)>0){
 
     t <- tail(nterm,1)
+    N <- c(N,t)
     print(t)
     index <- which(nodes == t)
 
         ### verifica regole di arresto
     results <- eStoppingRules(D,index, t, setting, response)
 
-    ### Compute the response in the node 
+    ### Compute the response in the node
     res <- moda(response[index])
     ###
 
@@ -126,7 +142,7 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
         info$ncat[t] <- var_classes[info$variable[t]]
 
         nodes[index] <- (nodes[index]*2+1)-S[index,s]
-        nterm <- c(nterm, unique(nodes[index]))
+        nterm <- c(nterm, sort(unique(nodes[index]), decreasing=T))
       }
     }
     #print(info$path[t])
@@ -147,8 +163,12 @@ e2tree <- function(D, X, response, setting=list(impTotal=0.1, maxDec=0.01, n=5, 
   #names(yval2) <- paste("V",seq(ncol(yval2)),sep="")
   attr(yval2,"dimnames")[[2]] <- paste("V",seq(ncol(yval2)),sep="")
   info$yval2 <- cbind(yval2, nodeprob)
+  ylevels <- as.character(unique(response))
 
-  object <- csplit_str(info,X,ncat)
+  object <- csplit_str(info,X,ncat, call=Call, terms=Terms, control=setting, ylevels=ylevels)
+
+  object$varimp <- vimp(object$tree, response, X)
+  object$N <- N
 
   return(object)
 }
@@ -170,7 +190,7 @@ paths <- function(info,t){
 
 
 ### creation objects for rpart.plot ----
-csplit_str <- function(info,X,ncat){
+csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
 
   var_lev <- attribute <- list()
   for (i in names(ncat)){
@@ -217,10 +237,11 @@ csplit_str <- function(info,X,ncat){
     csplit[i,ind] <- 3
   }
 
-
-  object <- list(tree=info, csplit=as.matrix(csplit),splits=splits)
+  object <- list(tree=info, csplit=as.matrix(csplit),splits=splits, call=call, terms=terms, control=control)
 
   attr(object,"xlevels") <- attribute
+  attr(object,"ylevels") <- ylevels
+
   class(object) <- "rpart"
 
   return(object)
