@@ -5,18 +5,18 @@
 \title{Explainable Ensemble Tree}
 \usage{
 e2tree(
+  formula,
+  data,
   D,
-  X,
-  response,
   setting = list(impTotal = 0.1, maxDec = 0.01, n = 5, level = 5, tMax = 5)
 )
 }
 \arguments{
-\item{D}{is the dissimilarity matrix}
+\item{formula}{is a formula, with a response but no interaction terms.}
 
-\item{X}{is the training data frame with only the predictors}
+\item{data}{is a data frame in which to interpret the variables named in the formula.}
 
-\item{response}{is the vector of responses of the training dataset}
+\item{D}{is the dissimilarity matrix.}
 
 \item{setting}{is a list containing the setting parameters for tree building procedure.
 Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.}

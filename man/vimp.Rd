@@ -4,7 +4,7 @@
 \alias{vimp}
 \title{Variable Importance}
 \usage{
-vimp(tree, response, X, graph = TRUE)
+vimp(tree, response, X)
 }
 \arguments{
 \item{tree}{is a e2tree object}

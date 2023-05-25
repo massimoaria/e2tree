@@ -2,9 +2,9 @@
 #'
 #' It creates an explainable tree for Random Forest
 #'
-#' @param formula
-#' @param data
-#' @param D is the dissimilarity matrix
+#' @param formula is a formula, with a response but no interaction terms.
+#' @param data is a data frame in which to interpret the variables named in the formula.
+#' @param D is the dissimilarity matrix.
 #' @param setting is a list containing the setting parameters for tree building procedure.
 #' Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.
 #'
