@@ -164,6 +164,8 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
   attr(yval2,"dimnames")[[2]] <- paste("V",seq(ncol(yval2)),sep="")
   info$yval2 <- cbind(yval2, nodeprob)
   ylevels <- as.character(unique(response))
+  row.names(info) <- info$node
+  info <- info[as.character(N),]
 
   object <- csplit_str(info,X,ncat, call=Call, terms=Terms, control=setting, ylevels=ylevels)
 
@@ -205,9 +207,15 @@ csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
     dplyr::select(n,ncat,variable,decImp, splitLabel)
 
   #splits <- info[!is.na(info$variable), c("n","ncat","variable","decImp", "splitLabel")]
+  # index for numerical predictors
+  varnumerics <- strsplit(splits$splitLabel[splits$ncat==-1],"<=")
+  splits$index[splits$ncat==-1] <- unlist(lapply(varnumerics, function(x) x[2]))
 
-  splits$index <- suppressWarnings(as.numeric(as.numeric(gsub("[^[:digit:]., ]", "",splits$splitLabel))))
+  #splits$index <- suppressWarnings(as.numeric(as.numeric(gsub("[^[:digit:]., ]", "",splits$splitLabel))))
   splits$index[splits$ncat!=-1] <- seq(sum(splits$ncat!=-1))
+  splits$index <- as.numeric(splits$index)
+
+
 
   catsplits <- splits %>%
     dplyr::filter(ncat!=-1) %>%

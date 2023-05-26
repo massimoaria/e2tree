@@ -5,7 +5,6 @@
 #' @param tree is a e2tree object
 #' @param response is the vector of responses of the training dataset
 #' @param X is the training data frame with only the predictors
-#' @param graph is logical. If TRUE the function will plot a vimp graph.
 #'
 #' @return a data frame containing variable importance metrics.
 #'
@@ -77,7 +76,6 @@ vimp <- function(tree, response, X){
   names(vimp)[1:3] <- c("Variable","MeanImpurityDecrease","MeanAccuracyDecrease")
 
   # Minimal theme + blue fill color
-  if (isTRUE(graph)){
     pImp <-ggplot(vimp, aes(y=.data$Variable, x=.data$MeanImpurityDecrease)) +
       geom_bar(stat="identity", fill="steelblue") +
       scale_y_discrete(limits = rev(vimp$Variable))+
@@ -92,7 +90,7 @@ vimp <- function(tree, response, X){
       scale_y_discrete(limits = rev(pAcc$Variable))+
       labs(title="Variable Importance Plot", x = "Mean Accuracy Decrease", y = "Variance") +
       theme_minimal()
-  }
+
   res <- list(vimp=vimp, g_imp=pImp, g_acc=pAcc)
   return(res)
 }

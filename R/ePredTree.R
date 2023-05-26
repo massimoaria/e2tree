@@ -18,6 +18,7 @@ ePredTree <- function(tree, X, target="1"){
   #type can be type=c("value","prob")
 
   row.names(X)=NULL
+  X$nodeIndex <- 1:nrow(X)
   pred <- data.frame(fit=rep(NA,nrow(X)), accuracy=NA, score=NA, row.names = 1:nrow(X))
 
   # extracting paths of terminal nodes
@@ -28,17 +29,18 @@ ePredTree <- function(tree, X, target="1"){
   paths_list$score[ind] <- 1-paths_list$score[ind]
 
   # identifying obs by paths of terminal nodes and add predictions
-  attach(X)
+
   for (i in 1:nrow(paths_list)){
     print(i)
     path <- paths_list[i,"path"]
-    index <- row.names(X[eval(parse(text=path)),])
+    Xn <- X %>% dplyr::filter(eval(parse(text=path)))
+    index <- Xn$nodeIndex
     pred[index,"fit"] <- paths_list[i,"pred"]
     pred[index,"accuracy"] <- paths_list[i,"prob"]
     pred[index,"score"] <- paths_list[i,"score"]
 
   }
-  detach(X)
+
 return(pred)
 
 }

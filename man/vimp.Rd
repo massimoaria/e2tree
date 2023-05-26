@@ -12,8 +12,6 @@ vimp(tree, response, X)
 \item{response}{is the vector of responses of the training dataset}
 
 \item{X}{is the training data frame with only the predictors}
-
-\item{graph}{is logical. If TRUE the function will plot a vimp graph.}
 }
 \value{
 a data frame containing variable importance metrics.

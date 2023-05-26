@@ -48,7 +48,7 @@ rpart2Tree <- function(fit){
               splits=fit$splits, csplit=fit$csplit, variable.importance=variable.importance)
   attr(obj, "xlevels") <- attr(fit, "xlevels")
   attr(obj, "ylevels") <- attr(fit, "ylevels")
-  obj$frame <- obj$frame[as.character(fit$N),]
+  #obj$frame <- obj$frame[as.character(fit$N),]
   class(obj) <- "rpart"
   return(obj)
 }
