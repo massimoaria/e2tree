@@ -226,23 +226,28 @@ csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
   attr(splits,"dimnames")[[1]]  <- info$variable[!is.na(info$variable)]
 
   ### creation of csplit
-  csplit <- matrix(2,nrow(catsplits),max(catsplits$ncat))
+  if (nrow(catsplits)>0){
+    csplit <- matrix(2,nrow(catsplits),max(catsplits$ncat))
 
-  for (i in 1:nrow(csplit)){
-    modal <- eval(parse(text=catsplits$modal[i]))
-    vec <- var_lev[[catsplits$variable[i]]]
-    ind <- vec[modal]
-    csplit[i,ind] <- 1
-    ind <- vec[setdiff(names(vec),modal)]
-    csplit[i,ind] <- 3
+    for (i in 1:nrow(csplit)){
+      modal <- eval(parse(text=catsplits$modal[i]))
+      vec <- var_lev[[catsplits$variable[i]]]
+      ind <- vec[modal]
+      csplit[i,ind] <- 1
+      ind <- vec[setdiff(names(vec),modal)]
+      csplit[i,ind] <- 3
+    }
+    csplit <- as.matrix(csplit)
+  } else {
+    csplit = NULL
   }
 
-  object <- list(tree=info, csplit=as.matrix(csplit),splits=splits, call=call, terms=terms, control=control)
+  object <- list(tree=info, csplit=csplit,splits=splits, call=call, terms=terms, control=control)
 
   attr(object,"xlevels") <- attribute
   attr(object,"ylevels") <- ylevels
 
-  class(object) <- "rpart"
+  #class(object) <- "rpart"
 
   return(object)
 }
