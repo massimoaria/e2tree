@@ -247,16 +247,5 @@ csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
   attr(object,"xlevels") <- attribute
   attr(object,"ylevels") <- ylevels
 
-  #class(object) <- "rpart"
-
   return(object)
 }
-
-#do.call("rbind", lapply(info, "[[", 1))
-
-### extract data using path
-#attach(ToothGrowth)
-#ToothGrowth[eval(parse(text=info[[9]]$path)),]
-
-
-
