@@ -4,14 +4,12 @@
 \alias{vimp}
 \title{Variable Importance}
 \usage{
-vimp(tree, response, X)
+vimp(fit, data)
 }
 \arguments{
-\item{tree}{is a e2tree object}
+\item{fit}{is a e2tree object}
 
-\item{response}{is the vector of responses of the training dataset}
-
-\item{X}{is the training data frame with only the predictors}
+\item{data}{is a data frame in which to interpret the variables named in the formula.}
 }
 \value{
 a data frame containing variable importance metrics.

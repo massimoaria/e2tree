@@ -4,14 +4,14 @@
 \alias{ePredTree}
 \title{Predict responses through an explainable RF}
 \usage{
-ePredTree(tree, X, target = "1")
+ePredTree(tree, data, target = "1")
 }
 \arguments{
-\item{tree}{is a e2tree object}
-
-\item{X}{is the training data frame with only the predictors}
+\item{data}{is a data frame}
 
 \item{target}{is the target value of response}
+
+\item{fit}{is a e2tree object}
 }
 \value{
 an object.

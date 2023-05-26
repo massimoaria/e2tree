@@ -2,9 +2,8 @@
 #'
 #' It calculate variable importance of an explainable tree
 #'
-#' @param tree is a e2tree object
-#' @param response is the vector of responses of the training dataset
-#' @param X is the training data frame with only the predictors
+#' @param fit is a e2tree object
+#' @param data is a data frame in which to interpret the variables named in the formula.
 #'
 #' @return a data frame containing variable importance metrics.
 #'
@@ -14,8 +13,12 @@
 #'
 #' @export
 #'
-vimp <- function(tree, response, X){
+vimp <- function(fit, data){
 
+  row.names(data) <- NULL
+  tree <- fit$tree
+  variables <- names(attr(fit$terms, "dataClasses"))[1]
+  response <- data[,variables]
   ## Calcolo decrease of Accuracy ##
   row.names(tree) <- tree$node
   tree$prob <- as.numeric(tree$prob)
@@ -24,13 +27,11 @@ vimp <- function(tree, response, X){
   tR <- as.character(tree[t,"node"]*2+1)
   tree[t,"probChildren"] <- (tree[tL,"prob"]*tree[tL,"n"]/tree[t,"n"]) + (tree[tR,"prob"]*tree[tR,"n"]/tree[t,"n"])
   #attach(X)
-  names(response) <- row.names(X)
+  names(response) <- row.names(data)
   for (i in t){
-    #iL <- as.character(unlist(tree[i,"children"])[1])
-    #iR <- as.character(unlist(tree[i,"children"])[2])
-    obs <- row.names(X)[unlist(tree[i,"obs"])]
+    obs <- row.names(data)[unlist(tree[i,"obs"])]
     path <- tree[i,"splitLabelSur"]
-    x <- X[obs,]
+    x <- data[obs,]
     indL <- obs[eval(parse(text=paste("x$",path)))]
     indR <- setdiff(obs,indL)
     probL <- as.numeric(moda(response[indL])[2])

@@ -2,8 +2,8 @@
 #'
 #' It predicts classification tree responses
 #'
-#' @param tree is a e2tree object
-#' @param X is the training data frame with only the predictors
+#' @param fit is a e2tree object
+#' @param data is a data frame
 #' @param target is the target value of response
 #'
 #' @return an object.
@@ -14,12 +14,13 @@
 #'
 #' @export
 #'
-ePredTree <- function(tree, X, target="1"){
+ePredTree <- function(tree, data, target="1"){
+  tree <- fit$tree
   #type can be type=c("value","prob")
 
-  row.names(X)=NULL
-  X$nodeIndex <- 1:nrow(X)
-  pred <- data.frame(fit=rep(NA,nrow(X)), accuracy=NA, score=NA, row.names = 1:nrow(X))
+  row.names(data)=NULL
+  data$nodeIndex <- 1:nrow(data)
+  pred <- data.frame(fit=rep(NA,nrow(data)), accuracy=NA, score=NA, row.names = 1:nrow(data))
 
   # extracting paths of terminal nodes
   paths_list <- tree[tree$terminal==TRUE, c("node","path","pred","prob")]
@@ -33,7 +34,7 @@ ePredTree <- function(tree, X, target="1"){
   for (i in 1:nrow(paths_list)){
     print(i)
     path <- paths_list[i,"path"]
-    Xn <- X %>% dplyr::filter(eval(parse(text=path)))
+    Xn <- data %>% dplyr::filter(eval(parse(text=path)))
     index <- Xn$nodeIndex
     pred[index,"fit"] <- paths_list[i,"pred"]
     pred[index,"accuracy"] <- paths_list[i,"prob"]

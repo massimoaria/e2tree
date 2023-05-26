@@ -169,8 +169,10 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
 
   object <- csplit_str(info,X,ncat, call=Call, terms=Terms, control=setting, ylevels=ylevels)
 
-  object$varimp <- vimp(object$tree, response, X)
+  object$varimp <- vimp(object, data = data)
   object$N <- N
+
+  class(obj) <- c("list", "e2tree")
 
   return(object)
 }
