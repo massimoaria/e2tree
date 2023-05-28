@@ -5,6 +5,8 @@ utils::globalVariables(".")
 #' @import purrr
 #' @import partitions
 #' @importFrom dplyr %>%
+#' @importFrom dplyr distinct
+#' @importFrom dplyr pick
 #' @importFrom dplyr row_number
 #' @importFrom dplyr across
 #' @importFrom dplyr tibble

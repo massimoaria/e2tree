@@ -1,3 +1,5 @@
+utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "ID", "index")) # to avoid CRAN check errors for tidyverse programming
+
 #' Explainable Ensemble Tree
 #'
 #' It creates an explainable tree for Random Forest
@@ -23,7 +25,6 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
   mf$drop.unused.levels <- TRUE
   mf[[1L]] <- quote(stats::model.frame)
   mf <- eval(mf, parent.frame())
-  #Terms <- attr(mf, "terms")
   Terms <- attributes(mf)$terms
 
   response <- mf[,1]
@@ -149,7 +150,7 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
     nterm <- setdiff(nterm,t)
 
   }
-  info <- info %>% drop_na(.data$node)
+  info <- info %>% drop_na(node)
   info$pred_val <- as.numeric(factor(info$pred))
   info$variableSur <- gsub(" <=.*| %in%.*","",info$splitLabelSur)
 

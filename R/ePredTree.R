@@ -14,7 +14,7 @@
 #'
 #' @export
 #'
-ePredTree <- function(tree, data, target="1"){
+ePredTree <- function(fit, data, target="1"){
   tree <- fit$tree
   #type can be type=c("value","prob")
 

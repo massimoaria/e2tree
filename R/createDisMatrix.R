@@ -1,3 +1,5 @@
+utils::globalVariables(c("resp")) # to avoid CRAN check errors for tidyverse programming
+
 #' Dissimilarity matrix
 #'
 #' The function crateDisMatrix creates a dissimilarity matrix among observations from an ensemble tree
@@ -28,10 +30,17 @@ createDisMatrix <- function(ensemble, data){
   for (i in seq_len(ensemble$ntree)){
     if ((i %% 100)==0) cat("\nAnalized ", (i), " trees")
     # Correct classification rate for all terminal nodes of the i-th tree
-    R <- obs %>% group_by_at(i+1) %>%
-      mutate(n = n()) %>%
-      summarize(freq = sort(table(.data$resp), decreasing=T)[1]/n) %>%
-      slice(1) %>% as.data.frame()
+    # R <- obs %>% group_by_at(i+1) %>%
+    #   mutate(n = n()) %>%
+    #   summarize(freq = sort(table(resp), decreasing=T)[1]/n) %>%
+    #   slice(1) %>% as.data.frame()
+    R <- obs %>% group_by(pick(i+1)) %>%
+      select(i+1, resp) %>%
+      mutate(n = n(),
+             freq = as.numeric(moda(resp)[2])) %>%
+      select(-resp, -n) %>%
+      distinct() %>%
+      as.data.frame()
     w[,i] <- R[as.numeric(factor(obs[,i+1])),2]
     # Calculate weighted co-occurrences among the observations
     a <- a+((outer(obs[,i+1],obs[,i+1],"==")+0)*w[,i])
