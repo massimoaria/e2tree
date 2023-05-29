@@ -1,3 +1,6 @@
+utils::globalVariables(c("decImp", "n", "pred", "variable", "Nimp", "vimp", "decProb", "pimp",
+                         "Pimp", "Nimp", "vimp_resp", "vimp_prob", "Variable", "MeanImpurityDecrease", "MeanAccuracyDecrease")) # to avoid CRAN check errors for tidyverse programming
+
 #' Variable Importance
 #'
 #' It calculate variable importance of an explainable tree
@@ -44,49 +47,49 @@ vimp <- function(fit, data){
 
 
   vimp_resp <- tree %>%
-    mutate(Nimp = .data$decImp*.data$n/.data$n[1]) %>%
-    group_by(.data$variable,.data$pred) %>%
-    summarize(vimp = sum(.data$Nimp)) %>%
-    drop_na(.data$variable) %>%
-    pivot_wider(names_from = .data$pred, values_from = .data$vimp)
+    mutate(Nimp = decImp*n/n[1]) %>%
+    group_by(variable,pred) %>%
+    summarize(vimp = sum(Nimp)) %>%
+    drop_na(variable) %>%
+    pivot_wider(names_from = pred, values_from = vimp)
 
   names(vimp_resp)[-1] <- paste("ImpDec_",names(vimp_resp)[-1])
 
   vimp_prob <- tree %>%
-    mutate(Pimp = .data$decProb*.data$n/.data$n[1]) %>%
-    group_by(.data$variable,.data$pred) %>%
-    summarize(pimp = sum(.data$Pimp)) %>%
-    drop_na(.data$variable) %>%
-    pivot_wider(names_from = .data$pred, values_from = .data$pimp)
+    mutate(Pimp = decProb*n/n[1]) %>%
+    group_by(variable,pred) %>%
+    summarize(pimp = sum(Pimp)) %>%
+    drop_na(variable) %>%
+    pivot_wider(names_from = pred, values_from = pimp)
 
   names(vimp_prob)[-1] <- paste("AccDec_",names(vimp_prob)[-1])
 
   vimp <- tree %>%
-    mutate(Nimp = .data$decImp*.data$n/.data$n[1],
-           Pimp = .data$decProb*.data$n/.data$n[1]) %>%
-    group_by(.data$variable) %>%
-    summarize(vimp = sum(.data$Nimp, na.rm=TRUE),
-              pimp = sum(.data$Pimp, na.rm=TRUE)) %>%
-    drop_na(.data$variable) %>%
+    mutate(Nimp = decImp*n/n[1],
+           Pimp = decProb*n/n[1]) %>%
+    group_by(variable) %>%
+    summarize(vimp = sum(Nimp, na.rm=TRUE),
+              pimp = sum(Pimp, na.rm=TRUE)) %>%
+    drop_na(variable) %>%
     # mutate(vimpNorm = .data$vimp/sum(.data$vimp)*100,
     #        pimpNorm = .data$pimp/sum(.data$pimp)*100) %>%
-    arrange(desc(.data$vimp), by_group=FALSE) %>%
+    arrange(desc(vimp), by_group=FALSE) %>%
     left_join(vimp_resp, by = "variable") %>%
     left_join(vimp_prob, by = "variable")
 
   names(vimp)[1:3] <- c("Variable","MeanImpurityDecrease","MeanAccuracyDecrease")
 
   # Minimal theme + blue fill color
-    pImp <-ggplot(vimp, aes(y=.data$Variable, x=.data$MeanImpurityDecrease)) +
+    pImp <-ggplot(vimp, aes(y=Variable, x=MeanImpurityDecrease)) +
       geom_bar(stat="identity", fill="steelblue") +
       scale_y_discrete(limits = rev(vimp$Variable))+
       labs(title="Variable Importance Plot", x = "Mean Impurity Decrease", y = "Variance") +
       theme_minimal()
 
     pAcc <-vimp %>%
-      arrange(desc(.data$MeanAccuracyDecrease), by_group=FALSE)
+      arrange(desc(MeanAccuracyDecrease), by_group=FALSE)
     pAcc <- pAcc %>%
-      ggplot(aes(y=.data$Variable, x=.data$MeanAccuracyDecrease)) +
+      ggplot(aes(y=Variable, x=.data$MeanAccuracyDecrease)) +
       geom_bar(stat="identity", fill="steelblue") +
       scale_y_discrete(limits = rev(pAcc$Variable))+
       labs(title="Variable Importance Plot", x = "Mean Accuracy Decrease", y = "Variance") +

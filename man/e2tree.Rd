@@ -8,7 +8,8 @@ e2tree(
   formula,
   data,
   D,
-  setting = list(impTotal = 0.1, maxDec = 0.01, n = 5, level = 5, tMax = 5)
+  setting = list(impTotal = 0.1, maxDec = 0.01, n = 5, level = 5, tMax = 5),
+  method = "classification"
 )
 }
 \arguments{
@@ -18,7 +19,9 @@ e2tree(
 
 \item{D}{is the dissimilarity matrix.}
 
-\item{setting}{is a list containing the setting parameters for tree building procedure.
+\item{setting}{is a list containing the setting parameters for tree building procedure.}
+
+\item{method}{is a character...
 Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.}
 }
 \value{

@@ -8,6 +8,7 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' @param data is a data frame in which to interpret the variables named in the formula.
 #' @param D is the dissimilarity matrix.
 #' @param setting is a list containing the setting parameters for tree building procedure.
+#' @param method is a character...
 #' Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.
 #'
 #' @return a e2tree object.
@@ -16,7 +17,7 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #'
 #' @export
 
-e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)){
+e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5), method="classification"){
 
   Call <- match.call()
   mf <- match.call(expand.dots = FALSE)
