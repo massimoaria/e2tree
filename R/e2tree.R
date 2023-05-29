@@ -2,20 +2,36 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 
 #' Explainable Ensemble Tree
 #'
-#' It creates an explainable tree for Random Forest
+#' It creates an explainable tree for Random Forest. Explainable Ensemble Trees (E2Tree) aimed to generate a “new tree” that can explain and represent the relational structure between the response variable and the predictors. This lead to providing a tree structure similar to those obtained for a decision tree exploiting the advantages of a dendrogram-like output.
 #'
-#' @param formula is a formula, with a response but no interaction terms.
-#' @param data is a data frame in which to interpret the variables named in the formula.
-#' @param D is the dissimilarity matrix.
-#' @param setting is a list containing the setting parameters for tree building procedure.
-#' @param method is a character method...
+#' @param formula is a formula describing the model to be fitted, with a response but no interaction terms.
+#' @param data a data frame containing the variables in the model. It is a data frame in which to interpret the variables named in the formula.
+#' @param D is the dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model. The dissimilarity matrix is obtained with the \link{createDisMatrix} function.
+#' @param setting is a list containing the set of stopping rules for the tree building procedure.
+#' \tabular{lll}{
+#' \code{impTotal}\tab   \tab The threshold for the impurity in the node\cr
+#' \code{maxDec}\tab   \tab The threshold for the maximum impurity decrease of the node\cr
+#' \code{n}\tab   \tab The minimum number of the observations in the node \cr
+#' \code{level}\tab   \tab The maximum depth of the tree (levels) \cr
+#' \code{tMax}\tab   \tab The maximum number of terminal nodes\cr}
+#' @param method The 'method' parameter specifies the method to be used for the analysis. There are two supported methods:
+#' \tabular{lll}{
+#' \code{classification}\tab   \tab Select this method if you want to perform a classification analysis. Classification is a supervised learning task where the goal is to assign input data to predefined categories or classes. The function will use algorithms tailored for classification tasks to build a model and make predictions based on the input data.\cr
+#' \code{regression}\tab   \tab Choose this method if you want to perform a regression analysis. Regression is a supervised learning task that aims to predict continuous numerical values based on input data. The function will use regression algorithms to build a model that can estimate the relationship between variables and predict numeric outcomes.\cr}
 #' Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.
 #'
-#' @return a e2tree object.
+#' @return A e2tree object, which is a list with the following components:
+#' \tabular{lll}{
+#' \code{tree}\tab   \tab  A data frame representing the main structure of the tree aimed at explaining and graphically representing the relationships and interactions between the variables used to perform an ensemble method. \cr
+#' \code{call}\tab   \tab The matched call\cr
+#' \code{terms}\tab   \tab A list of terms and attributes \cr
+#' \code{control}\tab   \tab A list containing the set of stopping rules for the tree building procedure  \cr
+#' \code{varimp}\tab   \tab A list containing a table and a plot for the variable importance. Variable importance refers to a quantitative measure that assesses the contribution of individual variables within a predictive model towards accurate predictions. It quantifies the influence or impact that each variable has on the model's overall performance. Variable importance provides insights into the relative significance of different variables in explaining the observed outcomes and aids in understanding the underlying relationships and dynamics within the model \cr}
 #'
 #' #examples
 #'
 #' @export
+
 
 e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5), method="classification"){
 
@@ -174,7 +190,7 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
   object$varimp <- vimp(object, data = data)
   object$N <- N
 
-  class(obj) <- c("list", "e2tree")
+  class(object) <- c("list", "e2tree")
 
   return(object)
 }

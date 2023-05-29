@@ -1,11 +1,18 @@
-#' Convert a e2tree into an rpart object
+#' Convert e2tree into an rpart object
 #'
-#' It converts a e2tree into an rpart object
+#' It converts an e2tree output into an rpart object.
 #'
-#' @param fit is e2tree object
+#' @param fit is e2tree object.
 #'
-#' @return an rpart object.
-#'
+#' @return An rpart object. It contains the following components:
+#' \tabular{lll}{
+#' \code{frame}\tab   \tab  The data frame includes a singular row for each node present in the tree. The row.names within the frame are assigned as unique node numbers, following a binary ordering system indexed by the depth of the nodes. The columns of the frame consist of the following components: (var) this variable denotes the names of the variables employed in the split at each node. In the case of leaf nodes, the level "<leaf>" is used to indicate their status as terminal nodes; (n) the variable 'n' represents the number of observations that reach a particular node; (wt) 'wt' signifies the sum of case weights associated with the observations reaching a given node; (dev) the deviance of the node, which serves as a measure of the node's impurity or lack of fit; (yval) the fitted value of the response variable at the node; (splits) this two-column matrix presents the labels for the left and right splits associated with each node; (complexity) the complexity parameter indicates the threshold value at which the split is likely to collapse; (ncompete) 'ncompete' denotes the number of competitor splits recorded for a node; (nsurrogate) the variable 'nsurrogate' represents the number of surrogate splits recorded for a node \cr
+#' \code{where}\tab   \tab An integer vector that matches the length of observations in the root node. The vector contains the row numbers in the frame that correspond to the leaf nodes where each observation is assigned \cr
+#' \code{call}\tab   \tab The matched call \cr
+#' \code{terms}\tab   \tab A list of terms and attributes  \cr
+#' \code{control}\tab   \tab A list containing the set of stopping rules for the tree building procedure \cr
+#' \code{functions}\tab   \tab The summary, print, and text functions are utilized for the specific method required \cr
+#' \code{variable.importance}\tab   \tab Variable importance refers to a quantitative measure that assesses the contribution of individual variables within a predictive model towards accurate predictions. It quantifies the influence or impact that each variable has on the model's overall performance. Variable importance provides insights into the relative significance of different variables in explaining the observed outcomes and aids in understanding the underlying relationships and dynamics within the model \cr}
 #'
 #'
 #' #examples
