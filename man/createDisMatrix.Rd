@@ -7,13 +7,13 @@
 createDisMatrix(ensemble, data)
 }
 \arguments{
-\item{ensemble}{is an ensemble tree object (for the moment ensemble works only with rf objects)}
+\item{ensemble}{is an ensemble tree object (for the moment ensemble works only with random forest objects)}
 
-\item{data}{is the training dataset used for ensemble learning}
+\item{data}{a data frame containing the variables in the model. It is the data frame used for ensemble learning.}
 }
 \value{
-a dissimilarity matrix.
+A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model.
 }
 \description{
-The function crateDisMatrix creates a dissimilarity matrix among observations from an ensemble tree
+The function createDisMatrix creates a dissimilarity matrix among observations from an ensemble tree.
 }

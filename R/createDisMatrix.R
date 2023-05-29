@@ -2,12 +2,12 @@ utils::globalVariables(c("resp")) # to avoid CRAN check errors for tidyverse pro
 
 #' Dissimilarity matrix
 #'
-#' The function crateDisMatrix creates a dissimilarity matrix among observations from an ensemble tree
+#' The function createDisMatrix creates a dissimilarity matrix among observations from an ensemble tree.
 #'
-#' @param ensemble is an ensemble tree object (for the moment ensemble works only with rf objects)
-#' @param data is the training dataset used for ensemble learning
+#' @param ensemble is an ensemble tree object (for the moment ensemble works only with random forest objects)
+#' @param data a data frame containing the variables in the model. It is the data frame used for ensemble learning.
 #'
-#' @return a dissimilarity matrix.
+#' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model.
 #'
 #' @export
 
