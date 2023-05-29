@@ -41,9 +41,37 @@ A e2tree object, which is a list with the following components:
 \code{terms}\tab   \tab A list of terms and attributes \cr
 \code{control}\tab   \tab A list containing the set of stopping rules for the tree building procedure  \cr
 \code{varimp}\tab   \tab A list containing a table and a plot for the variable importance. Variable importance refers to a quantitative measure that assesses the contribution of individual variables within a predictive model towards accurate predictions. It quantifies the influence or impact that each variable has on the model's overall performance. Variable importance provides insights into the relative significance of different variables in explaining the observed outcomes and aids in understanding the underlying relationships and dynamics within the model \cr}
-
-#examples
 }
 \description{
 It creates an explainable tree for Random Forest. Explainable Ensemble Trees (E2Tree) aimed to generate a “new tree” that can explain and represent the relational structure between the response variable and the predictors. This lead to providing a tree structure similar to those obtained for a decision tree exploiting the advantages of a dendrogram-like output.
+}
+\examples{
+## Classification:
+data(iris)
+
+# Create training and validation set:
+data_set_size <- floor(nrow(iris)/2)
+indexes <- sample(1:nrow(iris), size = data_set_size)
+training <- iris[indexes,]
+validation <- iris[-indexes,]
+response_training <- training[,5]
+response_validation <- validation[,5]
+
+# Perform training:
+require(randomForest)
+rf = randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
+D <- createDisMatrix(rf, data=training)
+setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
+tree <- e2tree(Species ~ ., training, D, setting)
+
+# Convert e2tree into an rpart object:
+expl_plot <- rpart2Tree(tree)
+
+# Run summary:
+summary(expl_plot)
+
+# Plot using rpart.plot package:
+require(rpart.plot)
+rpart.plot(expl_plot)
+
 }

@@ -9,6 +9,24 @@ utils::globalVariables(c("resp")) # to avoid CRAN check errors for tidyverse pro
 #'
 #' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model.
 #'
+#' @examples
+#'
+#' ## Classification
+#' data(iris)
+#'
+#' # Create training and validation set:
+#' data_set_size <- floor(nrow(iris)/2)
+#' indexes <- sample(1:nrow(iris), size = data_set_size)
+#' training <- iris[indexes,]
+#' validation <- iris[-indexes,]
+#' response_training <- training[,5]
+#' response_validation <- validation[,5]
+#'
+#' # Perform training:
+#' require(randomForest)
+#' rf = randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
+#' D <- createDisMatrix(rf, data=training)
+#'
 #' @export
 
 createDisMatrix <- function(ensemble, data){
