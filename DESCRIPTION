@@ -23,4 +23,6 @@ Imports:
     Matrix,
     partitions,
     purrr,
-    tidyr
+    tidyr,
+    randomForest,
+    rpart.plot

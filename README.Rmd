@@ -32,6 +32,7 @@ require(e2tree)
 require(tidyverse)
 options(dplyr.summarise.inform = FALSE)
 require(randomForest)
+require(rpart.plot)
 require(Matrix)
 require(future.apply)
 ```
@@ -98,34 +99,50 @@ setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
 ```
 
 
-Costruisco l'albero sintesi del RF
-
+Build an explainable tree for RF
 
 ```{r}
-tree <- e2tree(D, training[,-5], response_training, setting)
+tree <- e2tree(Species ~ ., training, D, setting)
 ```
 
+Let's have a look at the output
 
-Un'occhiata all'oggetto info1
 ```{r}
-tree %>% glimpse()
+tree 
 ```
-Predizione con il nuovo albero (esempio sul training)
+Convert e2tree into an rpart object and print summary:
+
+```{r}
+expl_plot <- rpart2Tree(tree)
+summary(expl_plot)
+```
+
+Plot using rpart.plot package:
+
+```{r}
+rpart.plot(expl_plot)
+```
+
+Prediction with the new tree (example on training)
+
 ```{r}
 pred <- ePredTree(tree, training[,-5], target="virginica")
 ```
 
-Comparazione tra le predizioni (campione training) di RF e eTree
+Comparison of predictions (training sample) of RF and e2tree
+
 ```{r}
 table(pred$fit,rf$predicted)
 ```
 
-Comparazione tra le predizioni (campione training) di RF e risposta corretta
+Comparison of predictions (training sample) of RF and correct response
+
 ```{r}
 table(rf$predicted, response_training)
 ```
 
-Comparazione tra le predizioni (campione training) di eTree e risposta corretta
+Comparison of predictions (training sample) of e2tree and correct response
+
 ```{r}
 table(pred$fit,response_training)
 ```
@@ -149,19 +166,22 @@ V
 ```
 
 
-Comparazione con il campione di validazione
+Comparison with the validation sample
+
 ```{r}
 rf.pred <- predict(rf, validation[,-5], proximity = TRUE)
 
 pred_val<- ePredTree(tree, validation[,-5], target="virginica")
 ```
 
-Comparazione tra le predizioni (campione validation) di RF e eTree
+Comparison of predictions (sample validation) of RF and e2tree
+
 ```{r}
 table(pred_val$fit,rf.pred$predicted)
 ```
 
-Comparazione tra le predizioni (campione validation) di RF e risposta corretta
+Comparison of predictions (validation sample) of RF and correct response
+
 ```{r}
 table(rf.pred$predicted, response_validation)
 rf.prob <- predict(rf, validation[,-5], proximity = TRUE, type="prob")
@@ -169,7 +189,8 @@ roc_rf <- roc(response_validation,rf.prob$predicted[,"virginica"],target="virgin
 roc_rf$auc
 ```
 
-Comparazione tra le predizioni (campione validation) di eTree e risposta corretta
+Comparison of predictions (validation sample) of e2tree and correct response
+
 ```{r}
 table(pred_val$fit,response_validation)
 roc_res <- roc(response_validation,pred_val$score,target="virginica")

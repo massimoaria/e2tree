@@ -153,6 +153,10 @@ utils::globalVariables(".")
 #' @importFrom Matrix updown
 #' @importFrom Matrix which
 #' @importFrom Matrix writeMM
+#' @importFrom randomForest randomForest
+#' @importFrom rpart.plot rpart.plot
+#'
+#'
 .onAttach<-function(...){
 packageStartupMessage("work in progress")
 }

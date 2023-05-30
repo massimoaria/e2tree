@@ -19,9 +19,38 @@ An rpart object. It contains the following components:
 \code{control}\tab   \tab A list containing the set of stopping rules for the tree building procedure \cr
 \code{functions}\tab   \tab The summary, print, and text functions are utilized for the specific method required \cr
 \code{variable.importance}\tab   \tab Variable importance refers to a quantitative measure that assesses the contribution of individual variables within a predictive model towards accurate predictions. It quantifies the influence or impact that each variable has on the model's overall performance. Variable importance provides insights into the relative significance of different variables in explaining the observed outcomes and aids in understanding the underlying relationships and dynamics within the model \cr}
-
-#examples
 }
 \description{
 It converts an e2tree output into an rpart object.
+}
+\examples{
+
+## Classification
+data(iris)
+
+# Create training and validation set:
+data_set_size <- floor(nrow(iris)/2)
+indexes <- sample(1:nrow(iris), size = data_set_size)
+training <- iris[indexes,]
+validation <- iris[-indexes,]
+response_training <- training[,5]
+response_validation <- validation[,5]
+
+# Perform training:
+require(randomForest)
+rf = randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
+D <- createDisMatrix(rf, data=training)
+setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
+tree <- e2tree(Species ~ ., training, D, setting)
+
+# Convert e2tree into an rpart object:
+expl_plot <- rpart2Tree(tree)
+
+# Run summary:
+summary(expl_plot)
+
+# Plot using rpart.plot package:
+require(rpart.plot)
+rpart.plot(expl_plot)
+
 }
