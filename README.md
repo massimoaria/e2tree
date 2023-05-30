@@ -1,18 +1,34 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml)
+
 <!-- badges: end -->
 
 # Explainable Ensemble Trees (E2Tree)
 
-The Explainable Ensemble Trees (E2Tree) key idea consists of the definition of an algorithm to represent every ensemble approach based on decision trees model using a single tree-like structure.
-The goal is to explain the results from the esemble algorithm while preserving its level of accuracy, which always outperforms those provided by a decision tree. The proposed method is based on identifying the relationship tree-like structure explaining the classification or regression paths summarizing the whole ensemble process. There are two main advantages of E2Tree:  
- - building an explainable tree that ensures the predictive performance of an RF model 
- - allowing the decision-maker to manage with an intuitive structure (such as a tree-like structure).
- 
-In this example, we focus on Random Forest but, again, the algorithm can be generalized to every ensemble approach based on decision trees.
+The Explainable Ensemble Trees (E2Tree) key idea consists of the
+definition of an algorithm to represent every ensemble approach based on
+decision trees model using a single tree-like structure. The goal is to
+explain the results from the esemble algorithm while preserving its
+level of accuracy, which always outperforms those provided by a decision
+tree. The proposed method is based on identifying the relationship
+tree-like structure explaining the classification or regression paths
+summarizing the whole ensemble process. There are two main advantages of
+E2Tree:\
+- building an explainable tree that ensures the predictive performance
+of an RF model - allowing the decision-maker to manage with an intuitive
+structure (such as a tree-like structure).
+
+In this example, we focus on Random Forest but, again, the algorithm can
+be generalized to every ensemble approach based on decision trees.
 
 ### Setup
 
@@ -38,13 +54,13 @@ require(future.apply)
 The package is still under development and therefore, for the time
 being, there are the following limitations:
 
-- Only ensembles trained with the randomforest package are supported.
-  Additional packages and approaches will be supported in the future;
+-   Only ensembles trained with the randomforest package are supported.
+    Additional packages and approaches will be supported in the future;
 
-- Currently e2tree works only in the case ofu classification problems.
-  It will gradually be extended to other problems related to the nature
-  of the response variable: regression, counting, multivariate response,
-  etc.
+-   Currently e2tree works only in the case ofu classification problems.
+    It will gradually be extended to other problems related to the
+    nature of the response variable: regression, counting, multivariate
+    response, etc.
 
 ## Example 1: IRIS dataset
 
@@ -101,10 +117,10 @@ setting e2tree parameters
 setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
 ```
 
-Build an explainable tree for RF 
+Build an explainable tree for RF
 
 ``` r
-tree <- e2tree(D, training[,-5], response_training, setting)
+tree <- e2tree(Species ~ ., training, D, setting)
 #> [1] 1
 #> [1] 2
 #> [1] 3
@@ -173,7 +189,8 @@ table(rf$predicted, response_training)
 #>   virginica       0          2        26
 ```
 
-Comparison of predictions (training sample) of e2tree and correct response
+Comparison of predictions (training sample) of e2tree and correct
+response
 
 ``` r
 table(pred$fit,response_training)
@@ -195,7 +212,7 @@ rfimp <- rf$importance %>% as.data.frame %>%
 V <- vimp(tree, response_training, training[,-5])
 ```
 
-<img src="man/figures/README-unnamed-chunk-14-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-14-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-14-1.png" width="100%"/><img src="man/figures/README-unnamed-chunk-14-2.png" width="100%"/>
 
 ``` r
 V <- V %>% select(.data$Variable, .data$MeanImpurityDecrease, .data$`ImpDec_ setosa`, .data$`ImpDec_ versicolor`,.data$`ImpDec_ virginica`) %>% 
@@ -249,14 +266,15 @@ rf.prob <- predict(rf, validation[,-5], proximity = TRUE, type="prob")
 roc_rf <- roc(response_validation,rf.prob$predicted[,"virginica"],target="virginica")
 ```
 
-<img src="man/figures/README-unnamed-chunk-17-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-17-1.png" width="100%"/>
 
 ``` r
 roc_rf$auc
 #> [1] 0.9873725
 ```
 
-Comparison of predictions (validation sample) of e2tree and correct response
+Comparison of predictions (validation sample) of e2tree and correct
+response
 
 ``` r
 table(pred_val$fit,response_validation)
@@ -268,7 +286,7 @@ table(pred_val$fit,response_validation)
 roc_res <- roc(response_validation,pred_val$score,target="virginica")
 ```
 
-<img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-18-1.png" width="100%"/>
 
 ``` r
 roc_res$auc

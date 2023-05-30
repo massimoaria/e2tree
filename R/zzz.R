@@ -4,6 +4,7 @@ utils::globalVariables(".")
 #' @import future.apply
 #' @import purrr
 #' @import partitions
+#' @import randomForest
 #' @importFrom dplyr %>%
 #' @importFrom dplyr distinct
 #' @importFrom dplyr pick
@@ -153,7 +154,6 @@ utils::globalVariables(".")
 #' @importFrom Matrix updown
 #' @importFrom Matrix which
 #' @importFrom Matrix writeMM
-#' @importFrom randomForest randomForest
 #' @importFrom rpart.plot rpart.plot
 #'
 #'

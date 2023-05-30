@@ -32,7 +32,6 @@ require(e2tree)
 require(tidyverse)
 options(dplyr.summarise.inform = FALSE)
 require(randomForest)
-require(rpart.plot)
 require(Matrix)
 require(future.apply)
 ```
