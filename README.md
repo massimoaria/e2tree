@@ -170,7 +170,7 @@ Explainable tree plot using rpart.plot package. This is the plot of the explaina
 ```{r}
 rpart.plot(expl_plot)
 ```
-
+## Testing the accuracy of the model w.r.t Random Forest performance
 Prediction with the new tree (example on training)
 
 ``` r
