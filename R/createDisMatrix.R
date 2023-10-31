@@ -23,8 +23,7 @@ utils::globalVariables(c("resp")) # to avoid CRAN check errors for tidyverse pro
 #' response_validation <- validation[,5]
 #'
 #' # Perform training:
-#' require(randomForest)
-#' rf = randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
+#' rf = randomForest::randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
 #' D <- createDisMatrix(rf, data=training)
 #'
 #' @export

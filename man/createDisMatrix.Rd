@@ -31,8 +31,7 @@ response_training <- training[,5]
 response_validation <- validation[,5]
 
 # Perform training:
-require(randomForest)
-rf = randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
+rf = randomForest::randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
 D <- createDisMatrix(rf, data=training)
 
 }
