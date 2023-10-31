@@ -116,7 +116,7 @@ expl_plot <- rpart2Tree(tree)
 summary(expl_plot)
 ```
 
-Plot using rpart.plot package:
+Explainable tree plot using rpart.plot package. This is the plot of the explainable tree containing all the information produced by Random Forest, i.e. which are the most informative splits and which are the paths that identified the final output:
 
 ```{r}
 rpart.plot(expl_plot)
