@@ -55,10 +55,10 @@ require(future.apply)
 The package is still under development and therefore, for the time
 being, there are the following limitations:
 
--   Only ensembles trained with the randomforest package are supported.
+-   Only ensembles trained with the randomForest package are supported.
     Additional packages and approaches will be supported in the future;
 
--   Currently e2tree works only in the case ofu classification problems.
+-   Currently e2tree works only in the case of classification problems.
     It will gradually be extended to other problems related to the
     nature of the response variable: regression, counting, multivariate
     response, etc.
