@@ -45,6 +45,7 @@ require(e2tree)
 require(tidyverse)
 options(dplyr.summarise.inform = FALSE)
 require(randomForest)
+require(rpart.plot)
 require(Matrix)
 require(future.apply)
 ```
@@ -155,6 +156,19 @@ tree %>% glimpse()
 #> $ obs           <list> <1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, …
 #> $ path          <chr> "", "Petal.Length <=1.9", "!Petal.Length <=1.9", "!Petal…
 #> $ pred_val      <dbl> 1, 1, 3, 2, 3, 2, 2
+```
+
+Convert e2tree into an rpart object and print summary:
+
+```{r}
+expl_plot <- rpart2Tree(tree)
+summary(expl_plot)
+```
+
+Explainable tree plot using rpart.plot package. This is the plot of the explainable tree containing all the information produced by Random Forest, i.e. which are the most informative splits and which are the paths that identified the final output:
+
+```{r}
+rpart.plot(expl_plot)
 ```
 
 Prediction with the new tree (example on training)
