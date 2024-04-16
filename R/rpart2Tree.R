@@ -29,8 +29,9 @@
 #' response_validation <- validation[,5]
 #'
 #' # Perform training:
-#' require(randomForest)
-#' rf = randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
+#' rf = randomForest::randomForest(Species ~ ., data=training, ntree=1000, mtry=2,
+#'                              importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
+
 #' D <- createDisMatrix(rf, data=training)
 #' setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
 #' tree <- e2tree(Species ~ ., training, D, setting)
@@ -42,32 +43,53 @@
 #' summary(expl_plot)
 #'
 #' # Plot using rpart.plot package:
-#' require(rpart.plot)
-#' rpart.plot(expl_plot)
+#' rpart.plot::rpart.plot(expl_plot)
 #'
 #' @export
 
 
-rpart2Tree <- function(fit){
+rpart2Tree <- function(fit, ensemble){
 
-  frame <- fit$tree %>%
-    select(.data$node,.data$variable, .data$n, .data$pred_val,.data$pred,.data$prob,.data$decImp, starts_with("yval2")) %>%
-    rename(var=.data$variable,
-           yval=.data$pred_val) %>%
+  type <- ensemble$type
+
+  frame <- fit$tree
+
+  switch(type,
+         classification={
+           frame <- frame %>%
+             select(.data$node,.data$variable, .data$n, .data$pred_val,.data$pred,.data$prob,.data$decImp, starts_with("yval2")) %>%
+             rename(var=.data$variable,
+                    yval=.data$pred_val)
+         },
+         regression={
+           frame <- frame %>%
+             select(.data$node,.data$variable, .data$n, .data$pred_val,.data$pred,.data$prob,.data$decImp) %>%
+             rename(var=.data$variable,
+                    yval=.data$pred)
+         })
+
+   frame <- frame %>%
     mutate(wt=.data$n,
            ncompete=0,
            nsurrogate=0,
            complexity=1-as.numeric(.data$prob),
-           dev=round(.data$n*(1-as.numeric(.data$prob)))) %>%
+           dev=.data$prob) %>%
     as.data.frame()
 
   rownames(frame) <- frame$node
   frame$var[is.na(frame$var)] <- "<leaf>"
   frame$complexity[is.na(frame$complexity)] <- 0.01
 
-  frame <- frame %>%
-    select("var","n","wt","dev","yval","complexity","ncompete","nsurrogate",starts_with("yval2"))#, nodeprob)
-  #frame <- frame[,c("var","n","wt","dev","yval","complexity","ncompete","nsurrogate","yval2")]
+
+  switch(type,
+         classification={
+           frame <- frame %>%
+             select("var","n","wt","dev","yval","complexity","ncompete","nsurrogate",starts_with("yval2"))
+         },
+         regression={
+           frame <- frame %>%
+             select("var","n","wt","dev","yval","complexity","ncompete","nsurrogate")
+         })
 
   obs <- fit$tree %>%
     dplyr::filter(.data$terminal==TRUE) %>%
@@ -79,8 +101,17 @@ rpart2Tree <- function(fit){
   variable.importance <- fit$varimp$vimp[[2]]
   names(variable.importance) <- fit$varimp$vimp[[1]]
 
-  obj <- list(frame=frame, where=where, call=fit$call, terms=fit$terms, method="class", control=fit$control, functions=rpartfunctions(),
-              splits=fit$splits, csplit=fit$csplit, variable.importance=variable.importance)
+  switch (type,
+    classification = {
+      obj <- list(frame=frame, where=where, call=fit$call, terms=fit$terms, method="class", control=fit$control, functions=rpartfunctions(),
+                  splits=fit$splits, csplit=fit$csplit, variable.importance=variable.importance)
+    },
+    regression = {
+      obj <- list(frame=frame, where=where, call=fit$call, terms=fit$terms, method="anova", control=fit$control, functions=rpartfunctions(),
+                  splits=fit$splits, csplit=fit$csplit, variable.importance=variable.importance)
+    }
+  )
+
   attr(obj, "xlevels") <- attr(fit, "xlevels")
   attr(obj, "ylevels") <- attr(fit, "ylevels")
   #obj$frame <- obj$frame[as.character(fit$N),]

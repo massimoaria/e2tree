@@ -18,6 +18,7 @@ utils::globalVariables(c("decImp", "n", "pred", "variable", "Nimp", "vimp", "dec
 #'
 vimp <- function(fit, data){
 
+  data <- as.data.frame(data)
   row.names(data) <- NULL
   tree <- fit$tree
   variables <- names(attr(fit$terms, "dataClasses"))[1]
