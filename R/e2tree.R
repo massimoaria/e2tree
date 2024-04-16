@@ -46,10 +46,10 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #'
 #' D <- createDisMatrix(rf, data=training)
 #' setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
-#' tree <- e2tree(Species ~ ., training, D, setting)
+#' tree <- e2tree(Species ~ ., data, D, ensemble, setting)
 #'
 #' # Convert e2tree into an rpart object:
-#' expl_plot <- rpart2Tree(tree)
+#' expl_plot <- rpart2Tree(tree, ensemble)
 #'
 #' # Run summary:
 #' summary(expl_plot)
@@ -60,7 +60,7 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' @export
 
 
-e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5), method="classification"){
+e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)){
 
   Call <- match.call()
   mf <- match.call(expand.dots = FALSE)
@@ -73,6 +73,7 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
 
   response <- mf[,1]
   X <- mf[,-1]
+  type <- ensemble$type
 
   for (i in 1:setting$level) setting$tMax=setting$tMax*2+1
 
@@ -97,36 +98,52 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
   # list of no-terminal nodes
   nterm <- 1
   m <- unique(response)
+
+  if (type == "classification") {
   m_label <- paste("V", seq(1,length(m)*2), sep="")
   labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur","variable" ,"split", "splitLabel", "variableSur", "splitLabelSur","parent","children","terminal", "obs", "path", "ncat",m_label)
   info <- data.frame(matrix(NA,setting$tMax,length(labels)))
   names(info) <- labels
   indv <- (ncol(info)-length(m_label)+1):ncol(info)
+  } else {
+    labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur","variable" ,"split", "splitLabel", "variableSur", "splitLabelSur","parent","children","terminal", "obs", "path", "ncat")
+    info <- data.frame(matrix(NA,setting$tMax,length(labels)))
+    names(info) <- labels
+    }
 
   N <- NULL
 
-  while(length(nterm)>0){
+  ### variance in the root node
+  vart1 = ifelse(type=="regression", var(response), NA)
 
+  while(length(nterm)>0){
     t <- tail(nterm,1)
-    N <- c(N,t)
     print(t)
+    N <- c(N,t)
     index <- which(nodes == t)
 
-        ### verifica regole di arresto
-    results <- eStoppingRules(D,index, t, setting, response)
+    ### check Stopping Rules----
+    results <- eStoppingRules(D,index, t, setting, response, ensemble, vart1)
 
     ### Compute the response in the node
-    res <- moda(response[index])
+    switch(type,
+           classification={
+             res <- moda(response[index])
+           },
+           regression={
+             res <- c(mean(response[index]), sum((response[index] - ensemble$predicted[index])^2)) # mean and deviance
+           })
     ###
 
-    info$pred[t] <- res[1]
-    info$prob[t] <- res[2]
+    info$pred[t] <- res[1]   # Mean for regression
+    info$prob[t] <- as.numeric(res[2])  # Deviance for regression
     info$node[t] <- t
     info$parent[t] <- floor(t/2)
     info$n[t] <- length(index)
     info$impTotal[t] <- results$impTotal
 
     ##### statistics
+    if (type == "classification") {
     yval <- data.frame(Y=response[index]) %>%
       mutate(Y=factor(Y, levels=levels(m))) %>%
       group_by(Y) %>%
@@ -138,6 +155,7 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
       c()
 
     info[t,indv] <- yval
+    }
 
     ###
 
@@ -148,7 +166,7 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
       info$obs[t] <- list(index)
       info$path[t] <- paths(info,t)
 
-      #### aggiungere la predizione
+      #### add prediction
       #info[[t]]$pred <- prediction(Y[index])
       ####
 
@@ -161,6 +179,7 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
       # max decrease of impurity
       decImp <- results$impTotal-imp[s]
       decImpSur <- results$impTotal-imp[s2]
+
       #check for max impurity stopping rule
       if (decImp<=setting$maxDec){
         #info[[t]] <- list(imp=NA,decImp=NA, split=NA, splitLabel=NA, terminal=TRUE, parent= floor(t/2), children=NA, impTotal=results$impTotal, obs=index, path=NA)
@@ -169,7 +188,10 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
         #info$impTotal[t] <- results$impTotal
         info$obs[t] <- list(index)
         info$path[t] <- paths(info,t)
-      } else{
+      } else if (suppressWarnings(Wtest(Y=response[index], X=S[index,s], p.value=0.05, type = ensemble$type))){
+        # Stopping Rule with Mann-Whitney for regression case
+        # if it is regression, check that the hypothesis that the two distributions in tL and tR are equal is rejected
+
         info$impChildren[t] <- as.numeric(imp[s])
         info$decImp[t] <- as.numeric(decImp)
         info$decImpSur[t] <- as.numeric(decImpSur)
@@ -187,8 +209,14 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
 
         nodes[index] <- (nodes[index]*2+1)-S[index,s]
         nterm <- c(nterm, sort(unique(nodes[index]), decreasing=T))
+      }else{
+        info$terminal[t] <- TRUE
+        #info$impTotal[t] <- results$impTotal
+        info$obs[t] <- list(index)
+        info$path[t] <- paths(info,t)
       }
     }
+
     #print(info$path[t])
     nterm <- setdiff(nterm,t)
 
@@ -197,29 +225,40 @@ e2tree <- function(formula, data, D, setting=list(impTotal=0.1, maxDec=0.01, n=5
   info$pred_val <- as.numeric(factor(info$pred))
   info$variableSur <- gsub(" <=.*| %in%.*","",info$splitLabelSur)
 
+  if (type == "classification") {
   yval2 <- as.matrix(info[,indv])
   ypred <- info$pred_val
   nodeprob <- info$n/first(info$n)
   info <- info[,-indv]
+
 
   #info$yval2 <- cbind(ypred, yval2, nodeprob)
   yval2 <- cbind(ypred,yval2)
   #names(yval2) <- paste("V",seq(ncol(yval2)),sep="")
   attr(yval2,"dimnames")[[2]] <- paste("V",seq(ncol(yval2)),sep="")
   info$yval2 <- cbind(yval2, nodeprob)
+  }
   ylevels <- as.character(unique(response))
   row.names(info) <- info$node
   info <- info[as.character(N),]
 
+
   object <- csplit_str(info,X,ncat, call=Call, terms=Terms, control=setting, ylevels=ylevels)
 
-  object$varimp <- vimp(object, data = data)
+  #object$varimp <- vimp(object, data = data)
+  ###### DOESN'T WORK!!
+
   object$N <- N
 
   class(object) <- c("list", "e2tree")
 
   return(object)
 }
+
+
+
+
+
 
 
 
@@ -254,8 +293,9 @@ csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
 
   #splits <- info[!is.na(info$variable), c("n","ncat","variable","decImp", "splitLabel")]
   # index for numerical predictors
+  if(nrow(info)>1){
   varnumerics <- strsplit(splits$splitLabel[splits$ncat==-1],"<=")
-  splits$index[splits$ncat==-1] <- unlist(lapply(varnumerics, function(x) x[2]))
+  splits$index[splits$ncat==-1] <- unlist(lapply(varnumerics, function(x) x[2]))}
 
   #splits$index <- suppressWarnings(as.numeric(as.numeric(gsub("[^[:digit:]., ]", "",splits$splitLabel))))
   splits$index[splits$ncat!=-1] <- seq(sum(splits$ncat!=-1))
@@ -273,7 +313,7 @@ csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
     #data.frame() %>%
     dplyr::select(n,ncat,decImp,index) %>%
     dplyr::rename(improve = decImp,
-           count = n) %>%
+                  count = n) %>%
     dplyr::mutate(adj=0) %>%
     as.matrix()
 
@@ -302,4 +342,22 @@ csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
   attr(object,"ylevels") <- ylevels
 
   return(object)
+}
+
+
+
+
+
+
+
+
+
+
+
+Wtest = function(Y, X, type, p.value=0.05){
+  switch (type,
+          "classification" = {resp=TRUE},
+          "regression" = {resp <- wilcox.test(Y ~ X)$p.value <= 0.05}
+  )
+  return(resp)
 }

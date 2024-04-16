@@ -8,8 +8,8 @@ e2tree(
   formula,
   data,
   D,
-  setting = list(impTotal = 0.1, maxDec = 0.01, n = 5, level = 5, tMax = 5),
-  method = "classification"
+  ensemble,
+  setting = list(impTotal = 0.1, maxDec = 0.01, n = 5, level = 5, tMax = 5)
 )
 }
 \arguments{
@@ -63,10 +63,10 @@ rf = randomForest::randomForest(Species ~ ., data=training, ntree=1000, mtry=2,
 
 D <- createDisMatrix(rf, data=training)
 setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
-tree <- e2tree(Species ~ ., training, D, setting)
+tree <- e2tree(Species ~ ., data, D, ensemble, setting)
 
 # Convert e2tree into an rpart object:
-expl_plot <- rpart2Tree(tree)
+expl_plot <- rpart2Tree(tree, ensemble)
 
 # Run summary:
 summary(expl_plot)

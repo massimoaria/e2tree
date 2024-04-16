@@ -4,7 +4,7 @@
 \alias{rpart2Tree}
 \title{Convert e2tree into an rpart object}
 \usage{
-rpart2Tree(fit)
+rpart2Tree(fit, ensemble)
 }
 \arguments{
 \item{fit}{is e2tree object.}

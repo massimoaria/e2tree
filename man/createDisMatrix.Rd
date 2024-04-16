@@ -4,12 +4,16 @@
 \alias{createDisMatrix}
 \title{Dissimilarity matrix}
 \usage{
-createDisMatrix(ensemble, data)
+createDisMatrix(ensemble, data, label, parallel = FALSE)
 }
 \arguments{
 \item{ensemble}{is an ensemble tree object (for the moment ensemble works only with random forest objects)}
 
 \item{data}{a data frame containing the variables in the model. It is the data frame used for ensemble learning.}
+
+\item{label}{is a character. It indicates the response label.}
+
+\item{parallel}{to speed up your code. Run all the process in parallel on your laptop using your cores-1}
 }
 \value{
 A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model.
@@ -31,7 +35,15 @@ response_training <- training[,5]
 response_validation <- validation[,5]
 
 # Perform training:
-rf = randomForest::randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
-D <- createDisMatrix(rf, data=training)
+require(randomForest)
+ensemble <- randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
+D <- createDisMatrix(ensemble, data=data, label = "Species", parallel = TRUE)
 
+
+# Regression
+data("mtcars")
+
+require(randomForest)
+ensemble = randomForest(mpg ~ ., data=mtcars, ntree=1000, importance=TRUE, proximity=TRUE)
+D = createDisMatrix(ensemble, data=data, label = "mpg", parallel = TRUE)
 }
