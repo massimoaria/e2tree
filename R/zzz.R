@@ -1,11 +1,17 @@
 utils::globalVariables(".")
 #' @import stats
+#' @import utils
+#' @import doParallel
+#' @import parallel
 #' @import ggplot2
 #' @import future.apply
 #' @import purrr
 #' @import partitions
-#' @import randomForest
+#@import randomForest
+#' @importFrom foreach foreach
+#' @importFrom foreach %dopar%
 #' @importFrom dplyr %>%
+#' @importFrom dplyr if_else
 #' @importFrom dplyr distinct
 #' @importFrom dplyr pick
 #' @importFrom dplyr row_number
@@ -46,6 +52,7 @@ utils::globalVariables(".")
 #' @importFrom dplyr starts_with
 #' @importFrom dplyr group_by_at
 #' @importFrom tidyr complete
+#' @importFrom tidyr replace_na
 #' @importFrom tidyr drop_na
 #' @importFrom tidyr pivot_longer
 #' @importFrom tidyr pivot_wider
@@ -154,7 +161,7 @@ utils::globalVariables(".")
 #' @importFrom Matrix updown
 #' @importFrom Matrix which
 #' @importFrom Matrix writeMM
-#' @importFrom rpart.plot rpart.plot
+# @importFrom rpart.plot rpart.plot
 #'
 #'
 .onAttach<-function(...){

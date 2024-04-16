@@ -19,18 +19,15 @@ e2tree(
 
 \item{D}{is the dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model. The dissimilarity matrix is obtained with the \link{createDisMatrix} function.}
 
+\item{ensemble}{is an ensemble tree object (for the moment ensemble works only with random forest objects)}
+
 \item{setting}{is a list containing the set of stopping rules for the tree building procedure.
 \tabular{lll}{
 \code{impTotal}\tab   \tab The threshold for the impurity in the node\cr
 \code{maxDec}\tab   \tab The threshold for the maximum impurity decrease of the node\cr
 \code{n}\tab   \tab The minimum number of the observations in the node \cr
 \code{level}\tab   \tab The maximum depth of the tree (levels) \cr
-\code{tMax}\tab   \tab The maximum number of terminal nodes\cr}}
-
-\item{method}{The 'method' parameter specifies the method to be used for the analysis. There are two supported methods:
-\tabular{lll}{
-\code{classification}\tab   \tab Select this method if you want to perform a classification analysis. Classification is a supervised learning task where the goal is to assign input data to predefined categories or classes. The function will use algorithms tailored for classification tasks to build a model and make predictions based on the input data.\cr
-\code{regression}\tab   \tab Choose this method if you want to perform a regression analysis. Regression is a supervised learning task that aims to predict continuous numerical values based on input data. The function will use regression algorithms to build a model that can estimate the relationship between variables and predict numeric outcomes.\cr}
+\code{tMax}\tab   \tab The maximum number of terminal nodes\cr}
 Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.}
 }
 \value{
@@ -46,6 +43,7 @@ A e2tree object, which is a list with the following components:
 It creates an explainable tree for Random Forest. Explainable Ensemble Trees (E2Tree) aimed to generate a “new tree” that can explain and represent the relational structure between the response variable and the predictors. This lead to providing a tree structure similar to those obtained for a decision tree exploiting the advantages of a dendrogram-like output.
 }
 \examples{
+\dontrun{
 ## Classification:
 data(iris)
 
@@ -73,5 +71,7 @@ summary(expl_plot)
 
 # Plot using rpart.plot package:
 rpart.plot::rpart.plot(expl_plot)
+
+}
 
 }

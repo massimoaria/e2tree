@@ -35,6 +35,7 @@ response_training <- training[,5]
 response_validation <- validation[,5]
 
 # Perform training:
+\dontrun{
 require(randomForest)
 ensemble <- randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
 D <- createDisMatrix(ensemble, data=data, label = "Species", parallel = TRUE)
@@ -46,4 +47,5 @@ data("mtcars")
 require(randomForest)
 ensemble = randomForest(mpg ~ ., data=mtcars, ntree=1000, importance=TRUE, proximity=TRUE)
 D = createDisMatrix(ensemble, data=data, label = "mpg", parallel = TRUE)
+}
 }

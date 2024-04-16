@@ -8,6 +8,8 @@ rpart2Tree(fit, ensemble)
 }
 \arguments{
 \item{fit}{is e2tree object.}
+
+\item{ensemble}{is an ensemble tree object (for the moment ensemble works only with random forest objects).}
 }
 \value{
 An rpart object. It contains the following components:
@@ -25,6 +27,7 @@ It converts an e2tree output into an rpart object.
 }
 \examples{
 
+\dontrun{
 ## Classification
 data(iris)
 
@@ -51,5 +54,5 @@ summary(expl_plot)
 
 # Plot using rpart.plot package:
 rpart.plot::rpart.plot(expl_plot)
-
+}
 }

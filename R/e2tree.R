@@ -7,6 +7,7 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' @param formula is a formula describing the model to be fitted, with a response but no interaction terms.
 #' @param data a data frame containing the variables in the model. It is a data frame in which to interpret the variables named in the formula.
 #' @param D is the dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model. The dissimilarity matrix is obtained with the \link{createDisMatrix} function.
+#' @param ensemble is an ensemble tree object (for the moment ensemble works only with random forest objects)
 #' @param setting is a list containing the set of stopping rules for the tree building procedure.
 #' \tabular{lll}{
 #' \code{impTotal}\tab   \tab The threshold for the impurity in the node\cr
@@ -14,10 +15,6 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' \code{n}\tab   \tab The minimum number of the observations in the node \cr
 #' \code{level}\tab   \tab The maximum depth of the tree (levels) \cr
 #' \code{tMax}\tab   \tab The maximum number of terminal nodes\cr}
-#' @param method The 'method' parameter specifies the method to be used for the analysis. There are two supported methods:
-#' \tabular{lll}{
-#' \code{classification}\tab   \tab Select this method if you want to perform a classification analysis. Classification is a supervised learning task where the goal is to assign input data to predefined categories or classes. The function will use algorithms tailored for classification tasks to build a model and make predictions based on the input data.\cr
-#' \code{regression}\tab   \tab Choose this method if you want to perform a regression analysis. Regression is a supervised learning task that aims to predict continuous numerical values based on input data. The function will use regression algorithms to build a model that can estimate the relationship between variables and predict numeric outcomes.\cr}
 #' Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.
 #'
 #' @return A e2tree object, which is a list with the following components:
@@ -29,6 +26,7 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' \code{varimp}\tab   \tab A list containing a table and a plot for the variable importance. Variable importance refers to a quantitative measure that assesses the contribution of individual variables within a predictive model towards accurate predictions. It quantifies the influence or impact that each variable has on the model's overall performance. Variable importance provides insights into the relative significance of different variables in explaining the observed outcomes and aids in understanding the underlying relationships and dynamics within the model \cr}
 #'
 #' @examples
+#' \dontrun{
 #' ## Classification:
 #' data(iris)
 #'
@@ -56,6 +54,8 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #'
 #' # Plot using rpart.plot package:
 #' rpart.plot::rpart.plot(expl_plot)
+#'
+#' }
 #'
 #' @export
 

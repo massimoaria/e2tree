@@ -23,6 +23,9 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports: 
     dplyr,
+    doParallel,
+    parallel,
+    foreach,
     future.apply,
     ggplot2,
     Matrix,

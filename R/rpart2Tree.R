@@ -3,6 +3,7 @@
 #' It converts an e2tree output into an rpart object.
 #'
 #' @param fit is e2tree object.
+#' @param ensemble is an ensemble tree object (for the moment ensemble works only with random forest objects).
 #'
 #' @return An rpart object. It contains the following components:
 #' \tabular{lll}{
@@ -17,6 +18,7 @@
 #'
 #' @examples
 #'
+#'\dontrun{
 #' ## Classification
 #' data(iris)
 #'
@@ -44,7 +46,7 @@
 #'
 #' # Plot using rpart.plot package:
 #' rpart.plot::rpart.plot(expl_plot)
-#'
+#'}
 #' @export
 
 

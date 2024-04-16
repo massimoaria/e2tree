@@ -1,4 +1,4 @@
-utils::globalVariables(c("resp")) # to avoid CRAN check errors for tidyverse programming
+utils::globalVariables(c("resp", "W")) # to avoid CRAN check errors for tidyverse programming
 
 #' Dissimilarity matrix
 #'
@@ -25,6 +25,7 @@ utils::globalVariables(c("resp")) # to avoid CRAN check errors for tidyverse pro
 #' response_validation <- validation[,5]
 #'
 #' # Perform training:
+#' \dontrun{
 #' require(randomForest)
 #' ensemble <- randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
 #' D <- createDisMatrix(ensemble, data=data, label = "Species", parallel = TRUE)
@@ -36,6 +37,7 @@ utils::globalVariables(c("resp")) # to avoid CRAN check errors for tidyverse pro
 #' require(randomForest)
 #' ensemble = randomForest(mpg ~ ., data=mtcars, ntree=1000, importance=TRUE, proximity=TRUE)
 #' D = createDisMatrix(ensemble, data=data, label = "mpg", parallel = TRUE)
+#' }
 #' @export
 
 createDisMatrix <- function(ensemble, data, label, parallel = FALSE){
