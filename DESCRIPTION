@@ -1,6 +1,6 @@
 Package: e2tree
 Title: Creating an Explainable Tree from an Ensemble Tree Structure
-Version: 0.0.1
+Version: 0.1.0
 Authors@R: c(
     person(given = "Massimo",
            family = "Aria",

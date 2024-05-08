@@ -1,9 +1,27 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# Explainable Ensemble Trees (e2tree)
+
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
+
+The Explainable Ensemble Trees (e2tree) key idea consists of the
+definition of an algorithm to represent every ensemble approach based on
+decision trees model using a single tree-like structure. The goal is to
+explain the results from the esemble algorithm while preserving its
+level of accuracy, which always outperforms those provided by a decision
+tree. The proposed method is based on identifying the relationship
+tree-like structure explaining the classification or regression paths
+summarizing the whole ensemble process. There are two main advantages of
+e2tree: - building an explainable tree that ensures the predictive
+performance of an RF model - allowing the decision-maker to manage with
+an intuitive structure (such as a tree-like structure).
+
+In this example, we focus on Random Forest but, again, the algorithm can
+be generalized to every ensemble approach based on decision trees.
 
 ## Setup
 
@@ -17,12 +35,11 @@ remotes::install_github("massimoaria/e2tree")
 
 ``` r
 require(e2tree)
-require(rsample)
-require(tidyverse)
-options(dplyr.summarise.inform = FALSE)
 require(randomForest)
-require(Matrix)
-require(future.apply)
+require(dplyr)
+require(ggplot2)
+if (!(require(rsample, quietly=TRUE))){install.packages("rsample"); require(rsample, quietly=TRUE)} 
+options(dplyr.summarise.inform = FALSE)
 ```
 
 ## Warnings
@@ -161,7 +178,7 @@ tree %>% glimpse()
 #>   .. ..- attr(*, "order")= int [1:4] 1 1 1 1
 #>   .. ..- attr(*, "intercept")= int 1
 #>   .. ..- attr(*, "response")= int 1
-#>   .. ..- attr(*, ".Environment")=<environment: 0x12b610678> 
+#>   .. ..- attr(*, ".Environment")=<environment: 0x11c5f2478> 
 #>   .. ..- attr(*, "predvars")= language list(Species, Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
 #>   .. ..- attr(*, "dataClasses")= Named chr [1:5] "factor" "numeric" "numeric" "numeric" ...
 #>   .. .. ..- attr(*, "names")= chr [1:5] "Species" "Sepal.Length" "Sepal.Width" "Petal.Length" ...
