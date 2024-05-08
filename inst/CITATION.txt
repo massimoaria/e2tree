@@ -1,0 +1,14 @@
+citHeader("If you use E2Tree in research, please cite:")
+
+bibentry(bibtype="Article",
+         title = "Explainable ensemble trees",
+         author = "Aria Massimo and Gnasso Agostino and Iorio Carmela and Pandolfo Giuseppe",
+         journal = "Computational Statistics",
+         year = "2024",
+         doi = "https://doi.org/10.1007/s00180-022-01312-6",
+         volume = "39",
+         issue = "1",
+         issn = "1613-9658",
+         pages = "3-19",
+         textVersion =
+           paste("Aria, M., Gnasso, A., Iorio, C., & Pandolfo, G. (2024). Explainable ensemble trees. Computational Statistics, 39(1), 3-19."))
