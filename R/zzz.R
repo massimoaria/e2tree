@@ -54,5 +54,7 @@ utils::globalVariables(".")
 #'
 #'
 .onAttach<-function(...){
-packageStartupMessage("Explainable Ensemble Tree")
+packageStartupMessage("Explainable Ensemble Tree (E2Tree) \n",
+  "If you use E2Tree in research, please cite: \n",
+                      "Aria, M., Gnasso, A., Iorio, C., & Pandolfo, G. (2024). Explainable ensemble trees. Computational Statistics, 39(1), 3-19. DOI: https://doi.org/10.1007/s00180-022-01312-6")
 }
