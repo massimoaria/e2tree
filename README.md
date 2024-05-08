@@ -5,16 +5,7 @@
 [![R-CMD-check](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-# Explainable Ensemble Trees (E2Tree)
-
-The Explainable Ensemble Trees (E2Tree) key idea consists of the definition of an algorithm to represent every ensemble approach based on decision trees model using a single tree-like structure.
-The goal is to explain the results from the esemble algorithm while preserving its level of accuracy, which always outperforms those provided by a decision tree. The proposed method is based on identifying the relationship tree-like structure explaining the classification or regression paths summarizing the whole ensemble process. There are two main advantages of E2Tree:  
- - building an explainable tree that ensures the predictive performance of an RF model 
- - allowing the decision-maker to manage with an intuitive structure (such as a tree-like structure).
- 
-In this example, we focus on Random Forest but, again, the algorithm can be generalized to every ensemble approach based on decision trees.
-
-### Setup
+## Setup
 
 You can install the developer version of e2tree from
 [GitHub](https://github.com) with:
@@ -26,6 +17,7 @@ remotes::install_github("massimoaria/e2tree")
 
 ``` r
 require(e2tree)
+require(rsample)
 require(tidyverse)
 options(dplyr.summarise.inform = FALSE)
 require(randomForest)
@@ -38,12 +30,12 @@ require(future.apply)
 The package is still under development and therefore, for the time
 being, there are the following limitations:
 
-- Only ensembles trained with the randomforest package are supported.
+- Only ensembles trained with the randomForest package are supported.
   Additional packages and approaches will be supported in the future;
 
-- Currently e2tree works only in the case ofu classification problems.
-  It will gradually be extended to other problems related to the nature
-  of the response variable: regression, counting, multivariate response,
+- Currently e2tree works only in the case of classification problems. It
+  will gradually be extended to other problems related to the nature of
+  the response variable: regression, counting, multivariate response,
   etc.
 
 ## Example 1: IRIS dataset
@@ -52,19 +44,21 @@ In this example, we want to show the main functions of the e2tree
 package.
 
 Starting from the IRIS dataset, we will train an ensemble tree using the
-randomforest package and then subsequently use e2tree to obtain an
+randomForest package and then subsequently use e2tree to obtain an
 explainable tree synthesis of the ensemble classifier.
 
 ``` r
 # Set random seed to make results reproducible:
 set.seed(0)
-# Calculate the size of each of the data sets:
-data_set_size <- floor(nrow(iris)/2)
-# Generate a random sample of "data_set_size" indexes
-indexes <- sample(1:nrow(iris), size = data_set_size)
+
+# Initialize the split
+iris_split <- iris %>% initial_split(prop = 0.6)
+iris_split
+#> <Training/Testing/Total>
+#> <90/60/150>
 # Assign the data to the correct sets
-training <- iris[indexes,]
-validation <- iris[-indexes,]
+training <- iris_split %>% training()
+validation <- iris_split %>% testing()
 response_training <- training[,5]
 response_validation <- validation[,5]
 ```
@@ -73,25 +67,16 @@ Train an Random Forest model with 1000 weak learners
 
 ``` r
 # Perform training:
-rf = randomForest(Species ~ ., data=training, ntree=1000, mtry=2, importance=TRUE, keep.inbag = TRUE, proximity=T)
+ensemble = randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
 ```
 
 Here, we create the dissimilarity matrix between observations through
 the createDisMatrix function
 
 ``` r
-D <- createDisMatrix(rf, data=training)
-#> 
-#> Analized  100  trees
-#> Analized  200  trees
-#> Analized  300  trees
-#> Analized  400  trees
-#> Analized  500  trees
-#> Analized  600  trees
-#> Analized  700  trees
-#> Analized  800  trees
-#> Analized  900  trees
-#> Analized  1000  trees
+D = createDisMatrix(ensemble, data = training, label = "Species", parallel = TRUE)
+#> Classification Framework 
+#>   |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   1%  |                                                                              |=                                                                     |   1%  |                                                                              |=                                                                     |   2%  |                                                                              |==                                                                    |   2%  |                                                                              |==                                                                    |   3%  |                                                                              |===                                                                   |   4%  |                                                                              |===                                                                   |   5%  |                                                                              |====                                                                  |   5%  |                                                                              |====                                                                  |   6%  |                                                                              |=====                                                                 |   7%  |                                                                              |=====                                                                 |   8%  |                                                                              |======                                                                |   8%  |                                                                              |======                                                                |   9%  |                                                                              |=======                                                               |   9%  |                                                                              |=======                                                               |  10%  |                                                                              |=======                                                               |  11%  |                                                                              |========                                                              |  11%  |                                                                              |========                                                              |  12%  |                                                                              |=========                                                             |  12%  |                                                                              |=========                                                             |  13%  |                                                                              |==========                                                            |  14%  |                                                                              |==========                                                            |  15%  |                                                                              |===========                                                           |  15%  |                                                                              |===========                                                           |  16%  |                                                                              |============                                                          |  17%  |                                                                              |============                                                          |  18%  |                                                                              |=============                                                         |  18%  |                                                                              |=============                                                         |  19%  |                                                                              |==============                                                        |  19%  |                                                                              |==============                                                        |  20%  |                                                                              |==============                                                        |  21%  |                                                                              |===============                                                       |  21%  |                                                                              |===============                                                       |  22%  |                                                                              |================                                                      |  22%  |                                                                              |================                                                      |  23%  |                                                                              |=================                                                     |  24%  |                                                                              |=================                                                     |  25%  |                                                                              |==================                                                    |  25%  |                                                                              |==================                                                    |  26%  |                                                                              |===================                                                   |  27%  |                                                                              |===================                                                   |  28%  |                                                                              |====================                                                  |  28%  |                                                                              |====================                                                  |  29%  |                                                                              |=====================                                                 |  29%  |                                                                              |=====================                                                 |  30%  |                                                                              |=====================                                                 |  31%  |                                                                              |======================                                                |  31%  |                                                                              |======================                                                |  32%  |                                                                              |=======================                                               |  32%  |                                                                              |=======================                                               |  33%  |                                                                              |========================                                              |  34%  |                                                                              |========================                                              |  35%  |                                                                              |=========================                                             |  35%  |                                                                              |=========================                                             |  36%  |                                                                              |==========================                                            |  37%  |                                                                              |==========================                                            |  38%  |                                                                              |===========================                                           |  38%  |                                                                              |===========================                                           |  39%  |                                                                              |============================                                          |  39%  |                                                                              |============================                                          |  40%  |                                                                              |============================                                          |  41%  |                                                                              |=============================                                         |  41%  |                                                                              |=============================                                         |  42%  |                                                                              |==============================                                        |  42%  |                                                                              |==============================                                        |  43%  |                                                                              |===============================                                       |  44%  |                                                                              |===============================                                       |  45%  |                                                                              |================================                                      |  45%  |                                                                              |================================                                      |  46%  |                                                                              |=================================                                     |  47%  |                                                                              |=================================                                     |  48%  |                                                                              |==================================                                    |  48%  |                                                                              |==================================                                    |  49%  |                                                                              |===================================                                   |  49%  |                                                                              |===================================                                   |  50%  |                                                                              |===================================                                   |  51%  |                                                                              |====================================                                  |  51%  |                                                                              |====================================                                  |  52%  |                                                                              |=====================================                                 |  52%  |                                                                              |=====================================                                 |  53%  |                                                                              |======================================                                |  54%  |                                                                              |======================================                                |  55%  |                                                                              |=======================================                               |  55%  |                                                                              |=======================================                               |  56%  |                                                                              |========================================                              |  57%  |                                                                              |========================================                              |  58%  |                                                                              |=========================================                             |  58%  |                                                                              |=========================================                             |  59%  |                                                                              |==========================================                            |  59%  |                                                                              |==========================================                            |  60%  |                                                                              |==========================================                            |  61%  |                                                                              |===========================================                           |  61%  |                                                                              |===========================================                           |  62%  |                                                                              |============================================                          |  62%  |                                                                              |============================================                          |  63%  |                                                                              |=============================================                         |  64%  |                                                                              |=============================================                         |  65%  |                                                                              |==============================================                        |  65%  |                                                                              |==============================================                        |  66%  |                                                                              |===============================================                       |  67%  |                                                                              |===============================================                       |  68%  |                                                                              |================================================                      |  68%  |                                                                              |================================================                      |  69%  |                                                                              |=================================================                     |  69%  |                                                                              |=================================================                     |  70%  |                                                                              |=================================================                     |  71%  |                                                                              |==================================================                    |  71%  |                                                                              |==================================================                    |  72%  |                                                                              |===================================================                   |  72%  |                                                                              |===================================================                   |  73%  |                                                                              |====================================================                  |  74%  |                                                                              |====================================================                  |  75%  |                                                                              |=====================================================                 |  75%  |                                                                              |=====================================================                 |  76%  |                                                                              |======================================================                |  77%  |                                                                              |======================================================                |  78%  |                                                                              |=======================================================               |  78%  |                                                                              |=======================================================               |  79%  |                                                                              |========================================================              |  79%  |                                                                              |========================================================              |  80%  |                                                                              |========================================================              |  81%  |                                                                              |=========================================================             |  81%  |                                                                              |=========================================================             |  82%  |                                                                              |==========================================================            |  82%  |                                                                              |==========================================================            |  83%  |                                                                              |===========================================================           |  84%  |                                                                              |===========================================================           |  85%  |                                                                              |============================================================          |  85%  |                                                                              |============================================================          |  86%  |                                                                              |=============================================================         |  87%  |                                                                              |=============================================================         |  88%  |                                                                              |==============================================================        |  88%  |                                                                              |==============================================================        |  89%  |                                                                              |===============================================================       |  89%  |                                                                              |===============================================================       |  90%  |                                                                              |===============================================================       |  91%  |                                                                              |================================================================      |  91%  |                                                                              |================================================================      |  92%  |                                                                              |=================================================================     |  92%  |                                                                              |=================================================================     |  93%  |                                                                              |==================================================================    |  94%  |                                                                              |==================================================================    |  95%  |                                                                              |===================================================================   |  95%  |                                                                              |===================================================================   |  96%  |                                                                              |====================================================================  |  97%  |                                                                              |====================================================================  |  98%  |                                                                              |===================================================================== |  98%  |                                                                              |===================================================================== |  99%  |                                                                              |======================================================================|  99%  |                                                                              |======================================================================| 100%
 #dis <- 1-rf$proximity
 ```
 
@@ -101,44 +86,95 @@ setting e2tree parameters
 setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
 ```
 
-Build an explainable tree for RF 
+Build an explainable tree for RF
 
 ``` r
-tree <- e2tree(D, training[,-5], response_training, setting)
+tree <- e2tree(Species ~ ., data = training, D, ensemble, setting)
 #> [1] 1
 #> [1] 2
 #> [1] 3
 #> [1] 6
-#> [1] 13
 #> [1] 12
+#> [1] 13
+#> [1] 26
+#> [1] 27
 #> [1] 7
 ```
 
-Let's have a look at the output
+Let’s have a look at the output
 
 ``` r
 tree %>% glimpse()
-#> Rows: 7
-#> Columns: 19
-#> $ node          <dbl> 1, 2, 3, 6, 7, 12, 13
-#> $ n             <int> 75, 29, 46, 20, 26, 16, 4
-#> $ pred          <chr> "setosa", "setosa", "virginica", "versicolor", "virginic…
-#> $ prob          <chr> "0.386666666666667", "1", "0.58695652173913", "0.95", "1…
-#> $ impTotal      <dbl> 0.69895205, 0.01628657, 0.58135876, 0.31262187, 0.129637…
-#> $ impChildren   <dbl> 0.3628642, NA, 0.2091960, 0.2283824, NA, NA, NA
-#> $ decImp        <dbl> 0.33608788, NA, 0.37216271, 0.08423945, NA, NA, NA
-#> $ decImpSur     <dbl> 0.24963733, NA, 0.33018530, 0.02263852, NA, NA, NA
-#> $ variable      <chr> "Petal.Length", NA, "Petal.Width", "Petal.Length", NA, N…
-#> $ split         <dbl> 53, NA, 92, 64, NA, NA, NA
-#> $ splitLabel    <chr> "Petal.Length <=1.9", NA, "Petal.Width <=1.7", "Petal.Le…
-#> $ variableSur   <chr> "Petal.Width", NA, "Petal.Length", "Petal.Width", NA, NA…
-#> $ splitLabelSur <chr> "Petal.Width <=0.6", NA, "Petal.Length <=4.7", "Petal.Wi…
-#> $ parent        <dbl> 0, 1, 1, 3, 3, 6, 6
-#> $ children      <list> <2, 3>, NA, <6, 7>, <12, 13>, NA, NA, NA
-#> $ terminal      <lgl> FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE
-#> $ obs           <list> <1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, …
-#> $ path          <chr> "", "Petal.Length <=1.9", "!Petal.Length <=1.9", "!Petal…
-#> $ pred_val      <dbl> 1, 1, 3, 2, 3, 2, 2
+#> List of 7
+#>  $ tree   :'data.frame': 9 obs. of  21 variables:
+#>   ..$ node         : num [1:9] 1 2 3 6 12 13 26 27 7
+#>   ..$ n            : int [1:9] 90 33 57 28 22 6 2 4 29
+#>   ..$ pred         : chr [1:9] "setosa" "setosa" "virginica" "versicolor" ...
+#>   ..$ prob         : num [1:9] 0.367 1 0.561 0.893 1 ...
+#>   ..$ impTotal     : num [1:9] 0.723 0.029 0.627 0.436 0.205 ...
+#>   ..$ impChildren  : num [1:9] 0.408 NA 0.29 0.304 NA ...
+#>   ..$ decImp       : num [1:9] 0.315 NA 0.337 0.133 NA ...
+#>   ..$ decImpSur    : num [1:9] 0.2072 NA 0.3286 0.0742 NA ...
+#>   ..$ variable     : chr [1:9] "Petal.Length" NA "Petal.Width" "Petal.Length" ...
+#>   ..$ split        : num [1:9] 57 NA 97 68 NA 71 NA NA NA
+#>   ..$ splitLabel   : chr [1:9] "Petal.Length <=1.9" NA "Petal.Width <=1.7" "Petal.Length <=4.7" ...
+#>   ..$ variableSur  : chr [1:9] "Petal.Width" NA "Petal.Length" "Sepal.Length" ...
+#>   ..$ splitLabelSur: chr [1:9] "Petal.Width <=0.6" NA "Petal.Length <=4.7" "Sepal.Length <=5.8" ...
+#>   ..$ parent       : num [1:9] 0 1 1 3 6 6 13 13 3
+#>   ..$ children     :List of 9
+#>   .. ..$ : num [1:2] 2 3
+#>   .. ..$ : logi NA
+#>   .. ..$ : num [1:2] 6 7
+#>   .. ..$ : num [1:2] 12 13
+#>   .. ..$ : logi NA
+#>   .. ..$ : num [1:2] 26 27
+#>   .. ..$ : logi NA
+#>   .. ..$ : logi NA
+#>   .. ..$ : logi NA
+#>   ..$ terminal     : logi [1:9] FALSE TRUE FALSE FALSE TRUE FALSE ...
+#>   ..$ obs          :List of 9
+#>   .. ..$ : int [1:90] 1 2 3 4 5 6 7 8 9 10 ...
+#>   .. ..$ : int [1:33] 4 5 8 11 14 17 21 23 26 27 ...
+#>   .. ..$ : int [1:57] 1 2 3 6 7 9 10 12 13 15 ...
+#>   .. ..$ : int [1:28] 2 6 7 10 12 13 20 22 24 33 ...
+#>   .. ..$ : int [1:22] 2 6 7 10 13 20 24 33 51 54 ...
+#>   .. ..$ : int [1:6] 12 22 50 69 79 89
+#>   .. ..$ : int [1:2] 12 50
+#>   .. ..$ : int [1:4] 22 69 79 89
+#>   .. ..$ : int [1:29] 1 3 9 15 16 18 19 25 28 31 ...
+#>   ..$ path         : chr [1:9] "" "Petal.Length <=1.9" "!Petal.Length <=1.9" "!Petal.Length <=1.9 & Petal.Width <=1.7" ...
+#>   ..$ ncat         : num [1:9] -1 NA -1 -1 NA -1 NA NA NA
+#>   ..$ pred_val     : num [1:9] 1 1 3 2 2 2 2 3 3
+#>   ..$ yval2        : num [1:9, 1:8] 1 1 3 2 2 2 2 3 3 33 ...
+#>   .. ..- attr(*, "dimnames")=List of 2
+#>  $ csplit : NULL
+#>  $ splits : num [1:4, 1:5] 90 57 28 6 -1 ...
+#>   ..- attr(*, "dimnames")=List of 2
+#>   .. ..$ : chr [1:4] "Petal.Length" "Petal.Width" "Petal.Length" "Petal.Length"
+#>   .. ..$ : chr [1:5] "count" "ncat" "improve" "index" ...
+#>  $ call   : language e2tree(formula = Species ~ ., data = training, D = D, ensemble = ensemble,      setting = setting)
+#>  $ terms  :Classes 'terms', 'formula'  language Species ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width
+#>   .. ..- attr(*, "variables")= language list(Species, Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
+#>   .. ..- attr(*, "factors")= int [1:5, 1:4] 0 1 0 0 0 0 0 1 0 0 ...
+#>   .. .. ..- attr(*, "dimnames")=List of 2
+#>   .. ..- attr(*, "term.labels")= chr [1:4] "Sepal.Length" "Sepal.Width" "Petal.Length" "Petal.Width"
+#>   .. ..- attr(*, "order")= int [1:4] 1 1 1 1
+#>   .. ..- attr(*, "intercept")= int 1
+#>   .. ..- attr(*, "response")= int 1
+#>   .. ..- attr(*, ".Environment")=<environment: 0x12b610678> 
+#>   .. ..- attr(*, "predvars")= language list(Species, Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
+#>   .. ..- attr(*, "dataClasses")= Named chr [1:5] "factor" "numeric" "numeric" "numeric" ...
+#>   .. .. ..- attr(*, "names")= chr [1:5] "Species" "Sepal.Length" "Sepal.Width" "Petal.Length" ...
+#>  $ control:List of 5
+#>   ..$ impTotal: num 0.1
+#>   ..$ maxDec  : num 0.01
+#>   ..$ n       : num 5
+#>   ..$ level   : num 5
+#>   ..$ tMax    : num 191
+#>  $ N      : num [1:9] 1 2 3 6 12 13 26 27 7
+#>  - attr(*, "xlevels")= list()
+#>  - attr(*, "ylevels")= chr [1:3] "virginica" "versicolor" "setosa"
+#>  - attr(*, "class")= chr [1:2] "list" "e2tree"
 ```
 
 Prediction with the new tree (example on training)
@@ -149,128 +185,140 @@ pred <- ePredTree(tree, training[,-5], target="virginica")
 #> [1] 2
 #> [1] 3
 #> [1] 4
+#> [1] 5
 ```
 
 Comparison of predictions (training sample) of RF and e2tree
 
 ``` r
-table(pred$fit,rf$predicted)
+table(pred$fit, ensemble$predicted)
 #>             
 #>              setosa versicolor virginica
-#>   setosa         29          0         0
-#>   versicolor      0         18         2
-#>   virginica       0          0        26
+#>   setosa         33          0         0
+#>   versicolor      0         23         1
+#>   virginica       0          2        31
 ```
 
 Comparison of predictions (training sample) of RF and correct response
 
 ``` r
-table(rf$predicted, response_training)
+table(ensemble$predicted, response_training)
 #>             response_training
 #>              setosa versicolor virginica
-#>   setosa         29          0         0
-#>   versicolor      0         17         1
-#>   virginica       0          2        26
+#>   setosa         33          0         0
+#>   versicolor      0         23         2
+#>   virginica       0          2        30
 ```
 
-Comparison of predictions (training sample) of e2tree and correct response
+Comparison of predictions (training sample) of e2tree and correct
+response
 
 ``` r
 table(pred$fit,response_training)
 #>             response_training
 #>              setosa versicolor virginica
-#>   setosa         29          0         0
-#>   versicolor      0         19         1
-#>   virginica       0          0        26
+#>   setosa         33          0         0
+#>   versicolor      0         24         0
+#>   virginica       0          1        32
 ```
 
 Variable Importance
 
 ``` r
-rfimp <- rf$importance %>% as.data.frame %>% 
-  mutate(Variable = rownames(rf$importance),
+ensemble_imp <- ensemble$importance %>% as.data.frame %>% 
+  mutate(Variable = rownames(ensemble$importance),
          RF_Var_Imp = round(MeanDecreaseAccuracy,2)) %>% 
   select(Variable, RF_Var_Imp)
 
-V <- vimp(tree, response_training, training[,-5])
-```
-
-<img src="man/figures/README-unnamed-chunk-14-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-14-2.png" width="100%" />
-
-``` r
-V <- V %>% select(.data$Variable, .data$MeanImpurityDecrease, .data$`ImpDec_ setosa`, .data$`ImpDec_ versicolor`,.data$`ImpDec_ virginica`) %>% 
-  mutate_at(c("MeanImpurityDecrease","ImpDec_ setosa", "ImpDec_ versicolor","ImpDec_ virginica"), round,2) %>% 
-  left_join(rfimp, by = "Variable") %>% 
-  select(Variable, RF_Var_Imp, MeanImpurityDecrease, starts_with("ImpDec")) %>% 
-  rename(ETree_Var_Imp = MeanImpurityDecrease)
+V <- vimp(tree, training)
+#V <- V$vimp %>% 
+#  select(Variable,MeanImpurityDecrease, `ImpDec_ setosa`, `ImpDec_ versicolor`,`ImpDec_ virginica`) %>% 
+#  mutate_at(c("MeanImpurityDecrease","ImpDec_ setosa", "ImpDec_ versicolor","ImpDec_ virginica"), round,2) %>% 
+#  left_join(ensemble_imp, by = "Variable") %>% 
+#  select(Variable, RF_Var_Imp, MeanImpurityDecrease, starts_with("ImpDec")) %>% 
+#  rename(ETree_Var_Imp = MeanImpurityDecrease)
 
 V
-#> # A tibble: 2 × 6
-#>   Variable     RF_Var_Imp ETree_Var_Imp `ImpDec_ setosa` `ImpDec_ versicolor`
-#>   <chr>             <dbl>         <dbl>            <dbl>                <dbl>
-#> 1 Petal.Length       0.27          0.36             0.34                 0.02
-#> 2 Petal.Width        0.34          0.23            NA                   NA   
-#> # … with 1 more variable: `ImpDec_ virginica` <dbl>
+#> $vimp
+#> # A tibble: 2 × 9
+#>   Variable     MeanImpurityDecrease MeanAccuracyDecrease `ImpDec_ setosa`
+#>   <chr>                       <dbl>                <dbl>            <dbl>
+#> 1 Petal.Length                0.364             2.22e- 2            0.315
+#> 2 Petal.Width                 0.214             1.41e-16           NA    
+#> # ℹ 5 more variables: `ImpDec_ versicolor` <dbl>, `ImpDec_ virginica` <dbl>,
+#> #   `AccDec_ setosa` <dbl>, `AccDec_ versicolor` <dbl>,
+#> #   `AccDec_ virginica` <dbl>
+#> 
+#> $g_imp
 ```
+
+<img src="man/figures/README-unnamed-chunk-14-1.png" width="100%" />
+
+    #> 
+    #> $g_acc
+
+<img src="man/figures/README-unnamed-chunk-14-2.png" width="100%" />
 
 Comparison with the validation sample
 
 ``` r
-rf.pred <- predict(rf, validation[,-5], proximity = TRUE)
+ensemble.pred <- predict(ensemble, validation[,-5], proximity = TRUE)
 
 pred_val<- ePredTree(tree, validation[,-5], target="virginica")
 #> [1] 1
 #> [1] 2
 #> [1] 3
 #> [1] 4
+#> [1] 5
 ```
 
 Comparison of predictions (sample validation) of RF and e2tree
 
 ``` r
-table(pred_val$fit,rf.pred$predicted)
+table(pred_val$fit, ensemble.pred$predicted)
 #>             
 #>              setosa versicolor virginica
-#>   setosa         21          0         0
-#>   versicolor      0         34         0
-#>   virginica       0          0        20
+#>   setosa         17          0         0
+#>   versicolor      0         26         0
+#>   virginica       0          0        17
 ```
 
 Comparison of predictions (validation sample) of RF and correct response
 
 ``` r
-table(rf.pred$predicted, response_validation)
+table(ensemble.pred$predicted, response_validation)
 #>             response_validation
 #>              setosa versicolor virginica
-#>   setosa         21          0         0
-#>   versicolor      0         30         4
-#>   virginica       0          1        19
-rf.prob <- predict(rf, validation[,-5], proximity = TRUE, type="prob")
-roc_rf <- roc(response_validation,rf.prob$predicted[,"virginica"],target="virginica")
+#>   setosa         17          0         0
+#>   versicolor      0         24         2
+#>   virginica       0          1        16
+ensemble.prob <- predict(ensemble, validation[,-5], proximity = TRUE, type="prob")
+roc_ensemble<- roc(response_validation, ensemble.prob$predicted[,"virginica"], target="virginica")
 ```
 
 <img src="man/figures/README-unnamed-chunk-17-1.png" width="100%" />
 
 ``` r
-roc_rf$auc
-#> [1] 0.9873725
+roc_ensemble$auc
+#> [1] 0.9874563
 ```
 
-Comparison of predictions (validation sample) of e2tree and correct response
+Comparison of predictions (validation sample) of e2tree and correct
+response
 
 ``` r
-table(pred_val$fit,response_validation)
+table(pred_val$fit, response_validation)
 #>             response_validation
 #>              setosa versicolor virginica
-#>   setosa         21          0         0
-#>   versicolor      0         30         4
-#>   virginica       0          1        19
-roc_res <- roc(response_validation,pred_val$score,target="virginica")
+#>   setosa         17          0         0
+#>   versicolor      0         24         2
+#>   virginica       0          1        16
+roc_res <- roc(response_validation, pred_val$score, target="virginica")
 ```
 
 <img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" />
 
 ``` r
 roc_res$auc
-#> [1] 0.96395
+#> [1] 0.9325268
 ```

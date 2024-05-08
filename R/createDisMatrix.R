@@ -1,5 +1,4 @@
 utils::globalVariables(c("resp", "W")) # to avoid CRAN check errors for tidyverse programming
-
 #' Dissimilarity matrix
 #'
 #' The function createDisMatrix creates a dissimilarity matrix among observations from an ensemble tree.
@@ -12,7 +11,7 @@ utils::globalVariables(c("resp", "W")) # to avoid CRAN check errors for tidyvers
 #' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model.
 #'
 #' @examples
-#'
+#' \dontrun{
 #' ## Classification
 #' data(iris)
 #'
@@ -25,7 +24,7 @@ utils::globalVariables(c("resp", "W")) # to avoid CRAN check errors for tidyvers
 #' response_validation <- validation[,5]
 #'
 #' # Perform training:
-#' \dontrun{
+#'
 #' require(randomForest)
 #' ensemble <- randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
 #' D <- createDisMatrix(ensemble, data=data, label = "Species", parallel = TRUE)

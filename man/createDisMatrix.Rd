@@ -22,7 +22,7 @@ A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance
 The function createDisMatrix creates a dissimilarity matrix among observations from an ensemble tree.
 }
 \examples{
-
+\dontrun{
 ## Classification
 data(iris)
 
@@ -35,7 +35,7 @@ response_training <- training[,5]
 response_validation <- validation[,5]
 
 # Perform training:
-\dontrun{
+
 require(randomForest)
 ensemble <- randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
 D <- createDisMatrix(ensemble, data=data, label = "Species", parallel = TRUE)

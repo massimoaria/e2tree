@@ -29,6 +29,7 @@ remotes::install_github("massimoaria/e2tree")
 
 ```{r warning=FALSE, message=FALSE}
 require(e2tree)
+require(rsample)
 require(tidyverse)
 options(dplyr.summarise.inform = FALSE)
 require(randomForest)
