@@ -32,7 +32,6 @@ ePredTree <- function(fit, data, target="1"){
   # identifying obs by paths of terminal nodes and add predictions
 
   for (i in 1:nrow(paths_list)){
-    print(i)
     path <- paths_list[i,"path"]
     Xn <- data %>% dplyr::filter(eval(parse(text=path)))
     index <- Xn$nodeIndex

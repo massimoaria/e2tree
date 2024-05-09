@@ -111,8 +111,14 @@ Build an explainable tree for RF
 
 ```{r}
 tree <- e2tree(Species ~ ., data = training, D, ensemble, setting)
-
 ```
+
+Plot the Explainable Ensemble Tree
+```{r}
+expl_plot <- rpart2Tree(tree, ensemble)
+rpart.plot::rpart.plot(expl_plot)
+```
+
 
 
 Let's have a look at the output

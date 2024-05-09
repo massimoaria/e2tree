@@ -107,16 +107,16 @@ Build an explainable tree for RF
 
 ``` r
 tree <- e2tree(Species ~ ., data = training, D, ensemble, setting)
-#> [1] 1
-#> [1] 2
-#> [1] 3
-#> [1] 6
-#> [1] 12
-#> [1] 13
-#> [1] 26
-#> [1] 27
-#> [1] 7
 ```
+
+Plot the Explainable Ensemble Tree
+
+``` r
+expl_plot <- rpart2Tree(tree, ensemble)
+rpart.plot::rpart.plot(expl_plot)
+```
+
+<img src="man/figures/README-unnamed-chunk-9-1.png" width="100%" />
 
 Let’s have a look at the output
 
@@ -178,7 +178,7 @@ tree %>% glimpse()
 #>   .. ..- attr(*, "order")= int [1:4] 1 1 1 1
 #>   .. ..- attr(*, "intercept")= int 1
 #>   .. ..- attr(*, "response")= int 1
-#>   .. ..- attr(*, ".Environment")=<environment: 0x11c5f2478> 
+#>   .. ..- attr(*, ".Environment")=<environment: R_GlobalEnv> 
 #>   .. ..- attr(*, "predvars")= language list(Species, Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
 #>   .. ..- attr(*, "dataClasses")= Named chr [1:5] "factor" "numeric" "numeric" "numeric" ...
 #>   .. .. ..- attr(*, "names")= chr [1:5] "Species" "Sepal.Length" "Sepal.Width" "Petal.Length" ...
@@ -198,11 +198,6 @@ Prediction with the new tree (example on training)
 
 ``` r
 pred <- ePredTree(tree, training[,-5], target="virginica")
-#> [1] 1
-#> [1] 2
-#> [1] 3
-#> [1] 4
-#> [1] 5
 ```
 
 Comparison of predictions (training sample) of RF and e2tree
@@ -269,12 +264,12 @@ V
 #> $g_imp
 ```
 
-<img src="man/figures/README-unnamed-chunk-14-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-15-1.png" width="100%" />
 
     #> 
     #> $g_acc
 
-<img src="man/figures/README-unnamed-chunk-14-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-15-2.png" width="100%" />
 
 Comparison with the validation sample
 
@@ -282,11 +277,6 @@ Comparison with the validation sample
 ensemble.pred <- predict(ensemble, validation[,-5], proximity = TRUE)
 
 pred_val<- ePredTree(tree, validation[,-5], target="virginica")
-#> [1] 1
-#> [1] 2
-#> [1] 3
-#> [1] 4
-#> [1] 5
 ```
 
 Comparison of predictions (sample validation) of RF and e2tree
@@ -313,7 +303,7 @@ ensemble.prob <- predict(ensemble, validation[,-5], proximity = TRUE, type="prob
 roc_ensemble<- roc(response_validation, ensemble.prob$predicted[,"virginica"], target="virginica")
 ```
 
-<img src="man/figures/README-unnamed-chunk-17-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" />
 
 ``` r
 roc_ensemble$auc
@@ -333,7 +323,7 @@ table(pred_val$fit, response_validation)
 roc_res <- roc(response_validation, pred_val$score, target="virginica")
 ```
 
-<img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" />
 
 ``` r
 roc_res$auc
