@@ -118,7 +118,7 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
 
   while(length(nterm)>0){
     t <- tail(nterm,1)
-    print(t)
+    #print(t)
     N <- c(N,t)
     index <- which(nodes == t)
 
