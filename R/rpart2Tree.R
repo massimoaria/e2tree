@@ -18,7 +18,7 @@
 #'
 #' @examples
 #'
-#'\dontrun{
+#'\donttest{
 #' ## Classification
 #' data(iris)
 #'

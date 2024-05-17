@@ -11,36 +11,45 @@ utils::globalVariables(c("resp", "W")) # to avoid CRAN check errors for tidyvers
 #' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' ## Classification
-#' data(iris)
+#' data("iris")
 #'
 #' # Create training and validation set:
-#' data_set_size <- floor(nrow(iris)/2)
-#' indexes <- sample(1:nrow(iris), size = data_set_size)
-#' training <- iris[indexes,]
-#' validation <- iris[-indexes,]
+#' smp_size <- floor(0.75 * nrow(iris))
+#' train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+#' training <- iris[train_ind, ]
+#' validation <- iris[-train_ind, ]
 #' response_training <- training[,5]
 #' response_validation <- validation[,5]
 #'
 #' # Perform training:
+#' ensemble <- randomForest::randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
+#' 
+#' D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = TRUE)
 #'
-#' require(randomForest)
-#' ensemble <- randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
-#' D <- createDisMatrix(ensemble, data=data, label = "Species", parallel = TRUE)
 #'
-#'
-#' # Regression
+#' ## Regression
 #' data("mtcars")
-#'
-#' require(randomForest)
-#' ensemble = randomForest(mpg ~ ., data=mtcars, ntree=1000, importance=TRUE, proximity=TRUE)
-#' D = createDisMatrix(ensemble, data=data, label = "mpg", parallel = TRUE)
+#' 
+#' # Create training and validation set:
+#' smp_size <- floor(0.75 * nrow(mtcars))
+#' train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
+#' training <- mtcars[train_ind, ]
+#' validation <- mtcars[-train_ind, ]
+#' response_training <- training[,1]
+#' response_validation <- validation[,1]
+#' 
+#' # Perform training
+#' ensemble = randomForest::randomForest(mpg ~ ., data=mtcars, ntree=1000, importance=TRUE, proximity=TRUE)
+#' 
+#' D = createDisMatrix(ensemble, data=data, label = "mpg", parallel = TRUE)  
+#' 
 #' }
 #' @export
 
 createDisMatrix <- function(ensemble, data, label, parallel = FALSE){
-
+  row.names(data)=NULL
 
   switch(class(ensemble)[length(class(ensemble))],
          randomForest={

@@ -27,7 +27,7 @@ It converts an e2tree output into an rpart object.
 }
 \examples{
 
-\dontrun{
+\donttest{
 ## Classification
 data(iris)
 
