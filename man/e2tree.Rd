@@ -56,18 +56,14 @@ response_training <- training[,5]
 response_validation <- validation[,5]
 
 # Perform training:
-ensemble <- randomForest::randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
+ensemble <- randomForest::randomForest(Species ~ ., data=training, 
+importance=TRUE, proximity=TRUE)
 
-D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = TRUE)
+D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
 
 setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
 tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 
-# Convert e2tree into an rpart object:
-expl_plot <- rpart2Tree(tree, ensemble)
-
-# Plot using rpart.plot package:
-rpart.plot::rpart.plot(expl_plot)
 
 
 ## Regression
@@ -82,18 +78,13 @@ response_training <- training[,1]
 response_validation <- validation[,1]
 
 # Perform training
-ensemble = randomForest::randomForest(mpg ~ ., data=mtcars, ntree=1000, importance=TRUE, proximity=TRUE)
+ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+importance=TRUE, proximity=TRUE)
 
-D = createDisMatrix(ensemble, data=data, label = "mpg", parallel = TRUE)  
+D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
 
 setting=list(impTotal=0.1, maxDec=(1*10^-6), n=5, level=5, tMax=5)
-tree <- e2tree(mpg ~ ., data, D, ensemble, setting)
-
-# Convert e2tree into an rpart object:
-expl_plot <- rpart2Tree(tree, ensemble)
-
-# Plot using rpart.plot package:
-rpart.plot::rpart.plot(expl_plot)
+tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
 
 }
 

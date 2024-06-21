@@ -35,9 +35,10 @@ response_training <- training[,5]
 response_validation <- validation[,5]
 
 # Perform training:
-ensemble <- randomForest::randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
+ensemble <- randomForest::randomForest(Species ~ ., data=training,
+importance=TRUE, proximity=TRUE)
 
-D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = TRUE)
+D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
 
 
 ## Regression
@@ -52,9 +53,10 @@ response_training <- training[,1]
 response_validation <- validation[,1]
 
 # Perform training
-ensemble = randomForest::randomForest(mpg ~ ., data=mtcars, ntree=1000, importance=TRUE, proximity=TRUE)
+ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+importance=TRUE, proximity=TRUE)
 
-D = createDisMatrix(ensemble, data=data, label = "mpg", parallel = TRUE)  
+D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
 
 }
 }
