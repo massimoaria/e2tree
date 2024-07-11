@@ -1,5 +1,5 @@
 Package: e2tree
-Title: Creating an Explainable Tree from an Ensemble Tree Structure
+Title: Explainable Ensemble Trees
 Version: 0.1.0
 Authors@R: c(
     person(given = "Massimo",
@@ -13,14 +13,17 @@ Authors@R: c(
            email = "agostino.gnasso@unina.it",
            comment = c(ORCID = "0000-0002-8046-3923"))
            )
-Description: Implemented within e2tree is a methodological proposal aimed at delivering an explainable tree structure for ensemble decision tree methods.
+Description: The Explainable Ensemble Trees 'e2tree' approach has been proposed by Aria et al. (2024) <doi:10.1007/s00180-022-01312-6>.
+             It aims to explain and interpret decision tree ensemble models using a single tree-like structure. 'e2tree' is a new way of explaining an ensemble tree structure. 
+             Starting from an ensemble tree model trained through randomForest or XGBoost packages, 'e2tree' is able to explain graphically the relationship structure between 
+             the response variable and predictors. The proposed method appears to be useful in all real-world cases where model explaination and interpretation is crucial (i.e. health, finance, etc.). 
 License: MIT + file LICENSE
 URL: https://github.com/massimoaria/e2tree
 BugReports: https://github.com/massimoaria/e2tree/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
-Imports: 
+Imports:
     dplyr,
     doParallel,
     parallel,
@@ -30,4 +33,6 @@ Imports:
     Matrix,
     partitions,
     purrr,
-    tidyr
+    tidyr,
+    randomForest,
+    rpart.plot

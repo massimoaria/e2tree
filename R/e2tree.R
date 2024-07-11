@@ -26,42 +26,57 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' \code{varimp}\tab   \tab A list containing a table and a plot for the variable importance. Variable importance refers to a quantitative measure that assesses the contribution of individual variables within a predictive model towards accurate predictions. It quantifies the influence or impact that each variable has on the model's overall performance. Variable importance provides insights into the relative significance of different variables in explaining the observed outcomes and aids in understanding the underlying relationships and dynamics within the model \cr}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' ## Classification:
 #' data(iris)
 #'
 #' # Create training and validation set:
-#' data_set_size <- floor(nrow(iris)/2)
-#' indexes <- sample(1:nrow(iris), size = data_set_size)
-#' training <- iris[indexes,]
-#' validation <- iris[-indexes,]
+#' smp_size <- floor(0.75 * nrow(iris))
+#' train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+#' training <- iris[train_ind, ]
+#' validation <- iris[-train_ind, ]
 #' response_training <- training[,5]
 #' response_validation <- validation[,5]
 #'
 #' # Perform training:
-#' rf = randomForest::randomForest(Species ~ ., data=training, ntree=1000, mtry=2,
-#'                              importance=TRUE, keep.inbag=TRUE, proximity=TRUE)
-#'
-#' D <- createDisMatrix(rf, data=training)
+#' ensemble <- randomForest::randomForest(Species ~ ., data=training, 
+#' importance=TRUE, proximity=TRUE)
+#' 
+#' D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
+#' 
 #' setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
-#' tree <- e2tree(Species ~ ., data, D, ensemble, setting)
+#' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 #'
-#' # Convert e2tree into an rpart object:
-#' expl_plot <- rpart2Tree(tree, ensemble)
-#'
-#' # Run summary:
-#' summary(expl_plot)
-#'
-#' # Plot using rpart.plot package:
-#' rpart.plot::rpart.plot(expl_plot)
-#'
+#' 
+#' 
+#' ## Regression
+#' data("mtcars")
+#' 
+#' # Create training and validation set:
+#' smp_size <- floor(0.75 * nrow(mtcars))
+#' train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
+#' training <- mtcars[train_ind, ]
+#' validation <- mtcars[-train_ind, ]
+#' response_training <- training[,1]
+#' response_validation <- validation[,1]
+#' 
+#' # Perform training
+#' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+#' importance=TRUE, proximity=TRUE)
+#' 
+#' D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
+#' 
+#' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=5, level=5, tMax=5)
+#' tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
+#' 
 #' }
 #'
 #' @export
 
 
 e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)){
-
+  row.names(data) = NULL
+  
   Call <- match.call()
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data"), names(mf), 0L)
@@ -77,13 +92,21 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
 
   for (i in 1:setting$level) setting$tMax=setting$tMax*2+1
 
-  # identify qualitative variable and the number of categories
+  ## identify qualitative variable and the number of categories:
+  # Determine classes of all variables in X
   var_classes <- unlist(lapply(X,class))
+  # Identify indices of factors and character variables
   ind <- which(var_classes %in% c("factor","character"))
-  ncat <- (apply(X[,ind],2, function(x) length(unique(x))))
+  # Calculate the number of unique categories for each factor and character variable
+  ncat <- (sapply(X[,ind], function(x) length(unique(x))))
+  #ncat <- (apply(X[,ind],2, function(x) length(unique(x))))
+  # Update var_classes with the number of categories for character and factor variables
   var_classes[names(ncat)] = ncat
+  # Set other variable types to -1
   var_classes[!names(var_classes) %in% names(ncat)] = -1
+  # Convert var_classes values to numeric
   var_classes <- as.numeric(var_classes)
+  # Ensure the names of var_classes match those of X
   names(var_classes) <- names(X)
 
   ## Generate the split matrix S from the original predictor matrix X

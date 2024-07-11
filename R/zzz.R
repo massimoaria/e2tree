@@ -7,7 +7,7 @@ utils::globalVariables(".")
 #' @import future.apply
 #' @import purrr
 #' @import partitions
-#@import randomForest
+#' @importFrom randomForest randomForest 
 #' @importFrom foreach foreach
 #' @importFrom foreach %dopar%
 #' @importFrom dplyr %>%
@@ -50,7 +50,7 @@ utils::globalVariables(".")
 #' @importFrom Matrix Matrix
 #' @importFrom Matrix rowSums
 #' @importFrom Matrix sparseMatrix
-# @importFrom rpart.plot rpart.plot
+#' @importFrom rpart.plot rpart.plot
 #'
 #'
 .onAttach<-function(...){

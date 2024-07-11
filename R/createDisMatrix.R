@@ -11,169 +11,235 @@ utils::globalVariables(c("resp", "W")) # to avoid CRAN check errors for tidyvers
 #' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' ## Classification
-#' data(iris)
+#' data("iris")
 #'
 #' # Create training and validation set:
-#' data_set_size <- floor(nrow(iris)/2)
-#' indexes <- sample(1:nrow(iris), size = data_set_size)
-#' training <- iris[indexes,]
-#' validation <- iris[-indexes,]
+#' smp_size <- floor(0.75 * nrow(iris))
+#' train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+#' training <- iris[train_ind, ]
+#' validation <- iris[-train_ind, ]
 #' response_training <- training[,5]
 #' response_validation <- validation[,5]
 #'
 #' # Perform training:
+#' ensemble <- randomForest::randomForest(Species ~ ., data=training,
+#' importance=TRUE, proximity=TRUE)
+#' 
+#' D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
 #'
-#' require(randomForest)
-#' ensemble <- randomForest(Species ~ ., data=training, importance=TRUE, proximity=TRUE)
-#' D <- createDisMatrix(ensemble, data=data, label = "Species", parallel = TRUE)
 #'
-#'
-#' # Regression
+#' ## Regression
 #' data("mtcars")
-#'
-#' require(randomForest)
-#' ensemble = randomForest(mpg ~ ., data=mtcars, ntree=1000, importance=TRUE, proximity=TRUE)
-#' D = createDisMatrix(ensemble, data=data, label = "mpg", parallel = TRUE)
+#' 
+#' # Create training and validation set:
+#' smp_size <- floor(0.75 * nrow(mtcars))
+#' train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
+#' training <- mtcars[train_ind, ]
+#' validation <- mtcars[-train_ind, ]
+#' response_training <- training[,1]
+#' response_validation <- validation[,1]
+#' 
+#' # Perform training
+#' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+#' importance=TRUE, proximity=TRUE)
+#' 
+#' D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
+#' 
 #' }
 #' @export
 
-createDisMatrix <- function(ensemble, data, label, parallel = FALSE){
-
-
+createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
+  row.names(data) <- NULL
+  
+  # Determine the type of the ensemble (e.g, regression or classification)
+  type <- ensemble$type
+  
+  
+  # Predict nodes or leaf indices based on the ensemble type
   switch(class(ensemble)[length(class(ensemble))],
-         randomForest={
-           obs <- as.data.frame(attr(predict(ensemble, newdata = data, nodes = TRUE),"nodes"))
+         randomForest = {
+           # If the ensemble is a random forest, get the terminal nodes for each tree
+           obs <- as.data.frame(attr(predict(ensemble, newdata = data, nodes = TRUE), "nodes"))
+           n_tree <- ensemble$ntree
          },
-         xgb.Booster={
-           obs <- as.data.frame(predict(ensemble, newdata = data, predleaf = TRUE))
-           ind <- which(colSums(obs)==0)
-           obs <- obs[,-ind]
+         xgb.Booster = 
+           {
+           # If the ensemble is an xgboost model, get the leaf indices for each tree
+           obs <- as.data.frame(predict(ensemble, newdata = data_XGB, predleaf = TRUE))
+           # Remove columns with all zeros
+           obs <- obs[, colSums(obs) != 0L] #PROBABILMENTE NON SERVE, PERCHE NON HO PIU IL NUMERO MAX DI ALBERI PRODOTTI
+           n_tree <- ensemble$niter
          })
-
-
-  # check if data is a data.frame
+  
+  # Ensure data is a data.frame and the response is a factor
   class(data) <- "data.frame"
-
-  #if (!inherits(data,"data.frame")){
-  #  data <- data.frame(data)
-  #}
-  # check if response has a factor class
-  if (!inherits(data[[label]],"factor")){
+  if (!inherits(data[[label]], "factor")) {
+    # Convert the response variable to a factor if it is not already
     data[[label]] <- factor(data[[label]])
   }
-
-  # save the type of the framework
-  type = ensemble$type
-
-
-  # Start
-  obs <- as.data.frame(attr(predict(ensemble, newdata = data, nodes = TRUE),"nodes"))
+  
+  
+  
+  # Add observation IDs and tree indices to the observations
   obs <- cbind(row.names(obs), obs)
-  names(obs) <- c("OBS",paste("Tree",seq(1,(ncol(obs)-1L)), sep=""))
-  row.names(obs)=NULL
-
+  names(obs) <- c("OBS", paste("Tree", seq(1, (ncol(obs) - 1L)), sep = ""))
+  row.names(obs) <- NULL
+  
   nodes <- sort(unique(as.numeric(as.matrix(((obs %>%
                                                 select(starts_with("Tree"))))))))
-
-  # response
-  if (type=="regression"){
-    obs$resp <- as.numeric(as.character(data[obs$OBS,label]))
+  
+  
+  
+  # Add the response variable to the observations
+  if (type == "classification") {
+    # For classification, retain the factor response
+    obs$resp <- data[as.numeric(obs$OBS), label]
   } else {
-    obs$resp <- data[as.numeric(obs$OBS),label]
+    # For regression, convert the response to numeric
+    obs$resp <- as.numeric(as.character(data[obs$OBS, label]))
   }
-
-  # n. of trees
-  ntree <- ncol(obs)-2L
-
-  ## Correct-classification rate matrix (Obs x Trees)
-  w <- matrix(NA,nrow(obs),ntree)
-  a <- Matrix(0, nrow(obs),nrow(obs), sparse = TRUE)
-
-  ####### Register the parallel backend to use
+  
+  # Number of trees in the ensemble
+  ntree <- ncol(obs) - 2L
+  
+  # Initialize matrices
+  w <- matrix(NA, nrow(obs), ntree)  # Matrix to store weights
+  a <- Matrix(0L, nrow(obs), nrow(obs), sparse = TRUE)  # Sparse matrix for co-occurrences
+  
+  # Register parallel backend
   if (parallel == TRUE) {
-  no_cores <- detectCores() - 1L  # Leave one core free for system processes
-  registerDoParallel(cores = no_cores)
+    # If parallel processing is enabled, use all minus one core
+    no_cores <- detectCores() - 1L
+    registerDoParallel(cores = no_cores)
   } else {
-    no_cores <- detectCores() - (max(detectCores()) - 1)  # Leave one core free for system processes
+    # If not using parallel processing, use one core
+    no_cores <- detectCores() - (max(detectCores()) - 1)  
     registerDoParallel(cores = no_cores)
   }
-
-
-    # if loop for Classification or Regression
-    if (type=="classification"){
-      cat(noquote("Classification Framework"), '\n')
-
-        # progress bar
-        pb <- txtProgressBar(min = 0L, max = ensemble$ntree, initial = 0L, style = 3)
-
-        results <- foreach(i=seq_len(ensemble$ntree),.packages='dplyr') %dopar% {
-        R <- obs %>% group_by(pick(i+1L)) %>%
-          select(i+1L, resp) %>%
-          mutate(n = n(),
-                 freq = as.numeric(moda(resp)[2L])) %>%
-          select(-resp, -n) %>%
-          distinct() %>%
-          as.data.frame()
-        w[,i] <- R[as.numeric(factor(obs[,i+1L])),2L]
-        # Calculate weighted co-occurrences among the observations
-        (outer(obs[,i+1L],obs[,i+1L],"==")+0L)*w[,i]
-        }
-
-        for(i in seq_along(results)) {
-          setTxtProgressBar(pb, i)
-        }
-        close(pb)
-        stopImplicitCluster()
-        a = Reduce("+", results)
-
-    } else {
-      cat(noquote("Regression Framework"), '\n')
-
-      maxvar <- diff(range(obs$resp))^2/9
-
-      # progress bar
-        pb <- txtProgressBar(min = 0L, max = ensemble$ntree, initial = 0L, style = 3)
-
-        results <- foreach(i=seq_len(ensemble$ntree),.packages='dplyr') %dopar% {
-        R <- obs %>% group_by(pick(i+1L)) %>%
-          select(i+1L, resp) %>%
-          mutate(W = 1L-var(resp)/maxvar,
-                 W = if_else(W < 0L, 0L, W)) %>% # if there are some negative value, type 0
-          select(-resp) %>%
-          distinct() %>%
-          replace_na(list(W=0)) %>%
-          as.data.frame()
-        w[,i] <- R[as.numeric(factor(obs[,i+1L])),2L]
-        # Calculate weighted co-occurrences among the observations
-        (outer(obs[,i+1L],obs[,i+1L],"==")+0L)*w[,i]
-      }
-
-    for(i in seq_along(results)) {
+  
+  
+  ## Start the computation
+  if (type == "classification") {
+    cat("Classification Framework\n")
+    
+    # Progress bar setup
+    # pb <- txtProgressBar(min = 0L, max = ensemble$ntree, style = 3L)
+    pb <- txtProgressBar(min = 0L, max = n_tree, style = 3L)
+    
+    # Parallel computation
+    #results <- foreach(i = seq_len(ensemble$ntree), .packages = c('dplyr', 'Matrix')) %dopar% {
+    results <- foreach(i = seq_len(ntree), .packages = c('dplyr', 'Matrix')) %dopar% {
+      cooccurrences(type, obs, w, i)
+    }
+    
+    # Update progress bar and combine results
+    for (i in seq_along(results)) {
       setTxtProgressBar(pb, i)
+      a <- as.matrix(a + results[[i]])
     }
     close(pb)
     stopImplicitCluster()
-    a = Reduce("+", results)
+    
+  } else {
+    cat("Regression Framework\n")
+    maxvar <- diff(range(obs$resp))^2L / 9L
+
+    
+    # Progress bar setup
+    # pb <- txtProgressBar(min = 0L, max = ensemble$ntree, style = 3L)
+    pb <- txtProgressBar(min = 0L, max = n_tree, style = 3L)
+    
+    # Parallel computation
+    #results <- foreach(i = seq_len(ensemble$ntree), .packages = c('dplyr', 'Matrix')) %dopar% {
+    results <- foreach(i = seq_len(n_tree), .packages = c('dplyr', 'Matrix')) %dopar% {
+      cooccurrences(type, obs, w, i, maxvar)
     }
-
+    
+    # Update progress bar and combine results
+    for (i in seq_along(results)) {
+      setTxtProgressBar(pb, i)
+      a <- as.matrix(a + results[[i]])
+    }
+    close(pb)
+    stopImplicitCluster()
+  }
+  
+  # Similarity matrix
   ## a is the similarity matrix
-
   ## aa is the maximum similarity matrix
-  aa=diag(a)
-
-  aa=outer(aa,aa,"maxValue")
-
-  a <- a/aa # now a is scaled between 0 and 1
-
-  ## Dissimilarity matrix among observations (respect to the co-occurrences in the same node)
-  dis <- 1L-a
-  row.names(dis)=colnames(dis)=obs$OBS
-
+  aa <- diag(a)
+  aa <- outer(aa, aa, "maxValue")
+  a <- a / aa  # now a is scaled between 0 and 1
+  
+  # Dissimilarity matrix among observations (respect to the co-occurrences in the same node)
+  dis <- 1L - a
+  row.names(dis) <- colnames(dis) <- obs$OBS
+  #dis <- as.matrix(dis)
+  
   return(dis)
 }
 
- maxValue <- function(x,y){
+
+
+
+
+
+## Main function
+cooccurrences <- function(type, obs, w, i, maxvar=NA) {
+  # Group data based on the tree node corresponding to column (i + 1L)
+  
+  if (type == "classification") {
+    R <- obs %>%
+      group_by(pick(i + 1L)) %>%
+      select(i + 1L, resp) %>%  # Select the node column and the response (resp)
+      mutate(n=n(),
+             freq = as.numeric(moda(resp)[2L])) %>%  # Find the mode of the responses and its frequency
+      select(-resp, -n) %>%  # Remove the 'resp' and 'n' columns no longer needed
+      distinct() %>%  
+      as.data.frame()  # Convert the result to a data frame
+  } else {
+    R <- obs %>%
+      group_by(pick(i + 1L)) %>%
+      select(i + 1L, resp) %>%  # Select the node column and the response (resp)
+      mutate(W = 1L - var(resp) / maxvar,  # Calculate weight based on variance
+             W = if_else(W < 0L, 0L, W)) %>%  # Ensure no negative weights
+      select(-resp) %>%  # Remove the 'resp' and 'n' columns no longer needed
+      distinct() %>%  
+      replace_na(list(W=0)) %>%
+      as.data.frame() # Convert the result to a data frame
+  }
+  
+  # Map the calculated weights to the corresponding column of the matrix w
+  # w[, i] <- R[match(obs[, i + 1L], R[, 1L]), 2L]
+  w[,i] <- R[as.numeric(factor(obs[,i+1L])),2L]
+  
+  # Perform garbage collection to free unused memory
+  gc()  
+  
+  # Initialize a sparse matrix for co-occurrences
+  co_occurrences <- Matrix(0L, nrow(obs), nrow(obs), sparse = TRUE)
+  
+  # Identify the unique node IDs
+  node_ids <- unique(obs[, i + 1L])
+  
+  # For each unique node ID
+  for (node in node_ids) {
+    # Find the indices of the observations that belong to the current node
+    indices <- which(obs[, i + 1L] == node)
+    # Update the co-occurrence matrix with the corresponding weights
+    co_occurrences[indices, indices] <- w[indices, i]
+  }
+  
+  # Return the co-occurrence matrix
+  return(co_occurrences)
+}
+
+
+
+
+
+maxValue <- function(x,y){
   apply(cbind(x,y),1L,max)
 }
