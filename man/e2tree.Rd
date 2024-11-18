@@ -9,7 +9,7 @@ e2tree(
   data,
   D,
   ensemble,
-  setting = list(impTotal = 0.1, maxDec = 0.01, n = 5, level = 5, tMax = 5)
+  setting = list(impTotal = 0.1, maxDec = 0.01, n = 2, level = 5)
 )
 }
 \arguments{
@@ -26,9 +26,8 @@ e2tree(
 \code{impTotal}\tab   \tab The threshold for the impurity in the node\cr
 \code{maxDec}\tab   \tab The threshold for the maximum impurity decrease of the node\cr
 \code{n}\tab   \tab The minimum number of the observations in the node \cr
-\code{level}\tab   \tab The maximum depth of the tree (levels) \cr
-\code{tMax}\tab   \tab The maximum number of terminal nodes\cr}
-Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.}
+\code{level}\tab   \tab The maximum depth of the tree (levels) \cr}
+Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)}.}
 }
 \value{
 A e2tree object, which is a list with the following components:
@@ -61,7 +60,7 @@ importance=TRUE, proximity=TRUE)
 
 D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
 
-setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
+setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 
 
@@ -83,7 +82,7 @@ importance=TRUE, proximity=TRUE)
 
 D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
 
-setting=list(impTotal=0.1, maxDec=(1*10^-6), n=5, level=5, tMax=5)
+setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
 
 }

@@ -13,9 +13,8 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' \code{impTotal}\tab   \tab The threshold for the impurity in the node\cr
 #' \code{maxDec}\tab   \tab The threshold for the maximum impurity decrease of the node\cr
 #' \code{n}\tab   \tab The minimum number of the observations in the node \cr
-#' \code{level}\tab   \tab The maximum depth of the tree (levels) \cr
-#' \code{tMax}\tab   \tab The maximum number of terminal nodes\cr}
-#' Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)}.
+#' \code{level}\tab   \tab The maximum depth of the tree (levels) \cr}
+#' Default is \code{setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)}.
 #'
 #' @return A e2tree object, which is a list with the following components:
 #' \tabular{lll}{
@@ -44,7 +43,7 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' 
 #' D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
 #' 
-#' setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
+#' setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 #' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 #'
 #' 
@@ -66,7 +65,7 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' 
 #' D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
 #' 
-#' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=5, level=5, tMax=5)
+#' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 #' tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
 #' 
 #' }
@@ -74,7 +73,7 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' @export
 
 
-e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)){
+e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)){
   row.names(data) = NULL
   
   Call <- match.call()
@@ -89,8 +88,10 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   response <- mf[,1]
   X <- mf[,-1]
   type <- ensemble$type
+  
+  setting$tMax <- 1
 
-  for (i in 1:setting$level) setting$tMax=setting$tMax*2+1
+  for (i in 1:setting$level) setting$tMax <- setting$tMax*2+1
 
   ## identify qualitative variable and the number of categories:
   # Determine classes of all variables in X
@@ -98,7 +99,14 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   # Identify indices of factors and character variables
   ind <- which(var_classes %in% c("factor","character"))
   # Calculate the number of unique categories for each factor and character variable
-  ncat <- (sapply(X[,ind], function(x) length(unique(x))))
+  ncat <- NULL
+  if (length(ind)>0){
+    for (i in 1:length(ind)){
+      ncat[i] <- length(unique(X[,ind[i]]))
+    }
+    names(ncat) <- names(X)[ind]
+  }
+  #ncat <- (sapply(X[,ind], function(x) length(unique(x))))
   #ncat <- (apply(X[,ind],2, function(x) length(unique(x))))
   # Update var_classes with the number of categories for character and factor variables
   var_classes[names(ncat)] = ncat
@@ -137,7 +145,7 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   N <- NULL
 
   ### variance in the root node
-  vart1 = ifelse(type=="regression", var(response), NA)
+  vart1 = ifelse(type=="regression", variance(response), NA)
 
   while(length(nterm)>0){
     t <- tail(nterm,1)
@@ -154,12 +162,12 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
              res <- moda(response[index])
            },
            regression={
-             res <- c(mean(response[index]), sum((response[index] - ensemble$predicted[index])^2)) # mean and deviance
+             res <- c(mean(response[index]), sum((response[index] - ensemble$predicted[index])^2)) # mean and MSE
            })
     ###
 
     info$pred[t] <- res[1]   # Mean for regression
-    info$prob[t] <- as.numeric(res[2])  # Deviance for regression
+    info$prob[t] <- as.numeric(res[2])  # MSE for regression
     info$node[t] <- t
     info$parent[t] <- floor(t/2)
     info$n[t] <- length(index)
@@ -265,7 +273,20 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   row.names(info) <- info$node
   info <- info[as.character(N),]
 
-
+  ## normalized variance in nodes for regression
+  if (type == "regression"){
+    info$Wt <- NULL
+    maxvar <- diff(range(response))^2L / 9L
+    size <- length(response) 
+    for (i in info$node){
+      indice <- unlist(eval(parse(text=info$obs[info$node==i])))
+      v <- 1-(variance(response[indice])/(maxvar*length(indice)/size))
+      info$Wt[info$node==i] <- ifelse(v<0,0,v)
+    }
+    info <- info %>% relocate(Wt, .after=prob)
+  }
+  
+  
   object <- csplit_str(info,X,ncat, call=Call, terms=Terms, control=setting, ylevels=ylevels)
 
   #object$varimp <- vimp(object, data = data)
@@ -371,7 +392,10 @@ csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
 
 
 
-
+## Variance
+variance <- function(x){
+  sum((x-mean(x))^2)/length(x)
+}
 
 
 

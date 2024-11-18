@@ -144,9 +144,11 @@ createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
     
   } else {
     cat("Regression Framework\n")
+    #maxvar <- variance(obs$resp)
     maxvar <- diff(range(obs$resp))^2L / 9L
-
+    #maxvar <- var(obs$resp)*(nrow(obs)-1)/nrow(obs) # population variance 
     
+      
     # Progress bar setup
     # pb <- txtProgressBar(min = 0L, max = ensemble$ntree, style = 3L)
     pb <- txtProgressBar(min = 0L, max = n_tree, style = 3L)
@@ -182,14 +184,17 @@ createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
 }
 
 
-
+## Variance
+variance <- function(x){
+  sum((x-mean(x))^2)/length(x)
+}
 
 
 
 ## Main function
 cooccurrences <- function(type, obs, w, i, maxvar=NA) {
   # Group data based on the tree node corresponding to column (i + 1L)
-  
+  N <- nrow(obs)
   if (type == "classification") {
     R <- obs %>%
       group_by(pick(i + 1L)) %>%
@@ -203,12 +208,13 @@ cooccurrences <- function(type, obs, w, i, maxvar=NA) {
     R <- obs %>%
       group_by(pick(i + 1L)) %>%
       select(i + 1L, resp) %>%  # Select the node column and the response (resp)
-      mutate(W = 1L - var(resp) / maxvar,  # Calculate weight based on variance
-             W = if_else(W < 0L, 0L, W)) %>%  # Ensure no negative weights
+      mutate(W = 1L - variance(resp) / (maxvar*length(resp)/N),  # Calculate weight based on variance
+             W = if_else(W < 0L, 0L, W)
+             ) %>%  # Ensure no negative weights
       select(-resp) %>%  # Remove the 'resp' and 'n' columns no longer needed
       distinct() %>%  
       replace_na(list(W=0)) %>%
-      as.data.frame() # Convert the result to a data frame
+      as.data.frame()  # Convert the result to a data frame
   }
   
   # Map the calculated weights to the corresponding column of the matrix w
