@@ -5,6 +5,7 @@ eImpurity <- function(y,index,S){
   tab <- colSums(S)
   ind <- !(tab>1 & tab < (n-1))
 
+  options(future.globals.maxSize = 2 * 1024^3)  # set limit to 2 GB
   imp <- future.apply::future_apply(S,2,function(s){
          g <- dissimilarity(y[index,index],s)
     })
