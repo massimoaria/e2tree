@@ -6,6 +6,7 @@
 #' @param data a data frame containing the variables in the model. It is the data frame used for ensemble learning.
 #' @param fit is e2tree object.
 #' @param D is the dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model. The dissimilarity matrix is obtained with the \link{createDisMatrix} function.
+#' @param is_classification Logical. Indicates whether the task is classification (`TRUE`) or regression (`FALSE`). Defaults to `TRUE`.
 #'
 #' @return A list containing three elements:
 #'   \itemize{
@@ -59,7 +60,6 @@
 #' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 #' tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
 #' 
-#' eComparison(training, tree, D)
 #' 
 #' }
 #'
