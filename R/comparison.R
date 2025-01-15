@@ -73,7 +73,7 @@ comparison <- function(train, tree, D, is_classification = TRUE) {
     main = "Random Forest Heatmap"
   )
   
-  # Perform Mantel test between the two matrix
+  # Perform Mantel test between the two
   mantel_test <- ape::mantel.test(
     Ps_ord, 
     1 - D_exp[order, order], 
