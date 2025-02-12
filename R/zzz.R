@@ -1,12 +1,13 @@
 utils::globalVariables(".")
 #' @import stats
-#' @import utils
 #' @import doParallel
 #' @import parallel
 #' @import ggplot2
 #' @import future.apply
 #' @import purrr
 #' @import partitions
+#' @importFrom Rcpp sourceCpp evalCpp
+#' @import RSpectra
 #' @importFrom randomForest randomForest 
 #' @importFrom foreach foreach
 #' @importFrom foreach %dopar%
@@ -51,7 +52,10 @@ utils::globalVariables(".")
 #' @importFrom Matrix rowSums
 #' @importFrom Matrix sparseMatrix
 #' @importFrom rpart.plot rpart.plot
-#'
+#' @importFrom grDevices colorRampPalette
+#' @importFrom utils globalVariables setTxtProgressBar tail txtProgressBar
+#' @importFrom ape mantel.test
+#' @useDynLib e2tree
 #'
 .onAttach<-function(...){
 packageStartupMessage("Explainable Ensemble Tree (e2tree) \n\n",

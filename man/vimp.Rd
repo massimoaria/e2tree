@@ -4,12 +4,14 @@
 \alias{vimp}
 \title{Variable Importance}
 \usage{
-vimp(fit, data)
+vimp(fit, data, type = "classification")
 }
 \arguments{
 \item{fit}{is a e2tree object}
 
 \item{data}{is a data frame in which to interpret the variables named in the formula.}
+
+\item{type}{Specify the type. The default is ‘classification’, otherwise ‘regression’.}
 }
 \value{
 a data frame containing variable importance metrics.

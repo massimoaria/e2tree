@@ -1,4 +1,4 @@
-utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "ID", "index")) # to avoid CRAN check errors for tidyverse programming
+utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "ID", "index", "Wt", "prob")) # to avoid CRAN check errors for tidyverse programming
 
 #' Explainable Ensemble Tree
 #'

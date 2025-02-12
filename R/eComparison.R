@@ -1,3 +1,5 @@
+utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse programming
+
 #' Comparison of Heatmaps and Mantel Test
 #'
 #' This function processes heatmaps for visual comparison and performs the Mantel testbetween a dissimilarity matrix derived from Random Forest outputs and a matrix estimated 
@@ -6,7 +8,6 @@
 #' @param data a data frame containing the variables in the model. It is the data frame used for ensemble learning.
 #' @param fit is e2tree object.
 #' @param D is the dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model. The dissimilarity matrix is obtained with the \link{createDisMatrix} function.
-#' @param is_classification Logical. Indicates whether the task is classification (`TRUE`) or regression (`FALSE`). Defaults to `TRUE`.
 #'
 #' @return A list containing three elements:
 #'   \itemize{
