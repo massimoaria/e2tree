@@ -68,12 +68,36 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 
 # Define a function to process heatmaps and perform Mantel test
 # The comparison is between the heatmap of the matrix O obtained from the RF output and the heatmap of the matrix O estimated by E2Tree
-eComparison <- function(data, fit, D) {
+eComparison <- function(data, fit, D, graph = TRUE) {
+  # === Input Validation ===
+  
+  # Validate 'data'
+  if (!is.data.frame(data) || nrow(data) == 0) {
+    stop("Error: 'data' must be a non-empty data frame.")
+  }
+  
+  # Validate 'fit' (must be an 'e2tree' object)
+  if (!inherits(fit, "e2tree")) {
+    stop("Error: 'fit' must be an 'e2tree' object.")
+  }
+  
+  # Validate 'D' (dissimilarity matrix)
+  if (!is.matrix(D) || nrow(D) != ncol(D)) {
+    stop("Error: 'D' must be a square dissimilarity matrix.")
+  }
+  
+  # Ensure number of rows in 'data' matches the dimension of 'D'
+  if (nrow(data) != nrow(D)) {
+    stop("Error: The number of rows in 'data' must match the dimensions of 'D'.")
+  }
+  
+  # === Proceed with the function ===
+  
   # Get the number of observations in the data
   n <- nrow(data)
   
   # Extract the tree structure from the tree object
-  df <- tree$tree
+  df <- fit$tree
   
   # Identify terminal nodes in the tree
   terminal_nodes <- df$node[df$terminal]
@@ -126,30 +150,34 @@ eComparison <- function(data, fit, D) {
   mantel_test <- ape::mantel.test(
     Ps_ord, 
     1 - D_exp[order, order], 
-    graph = TRUE, 
+    graph = graph, 
     main = "Mantel test"
   )
   
-  # Save the E2Tree heatmap as an object
-  E2THeatMap <- heatmap(
-    sqrt(Ps_ord), 
-    Rowv = NA, 
-    Colv = NA, 
-    scale = "none", 
-    col = bw_palette,
-    main = "E2Tree Heatmap"
-  )
+  if (graph){
+    # Save the E2Tree heatmap as an object
+    heatmap(
+      sqrt(Ps_ord), 
+      Rowv = NA, 
+      Colv = NA, 
+      scale = "none", 
+      col = bw_palette,
+      main = "E2Tree Heatmap"
+    )
+    
+    # Save the Random Forest heatmap as an object
+    heatmap(
+      sqrt(1 - D_exp[order, order]), 
+      Rowv = NA, 
+      Colv = NA, 
+      scale = "none", 
+      col = bw_palette,
+      main = "Ensemble Heatmap"
+    )
+  }
   
-  # Save the Random Forest heatmap as an object
-  RFHeatMap <- heatmap(
-    sqrt(1 - D_exp[order, order]), 
-    Rowv = NA, 
-    Colv = NA, 
-    scale = "none", 
-    col = bw_palette,
-    main = "RF Heatmap"
-  )
+  
   
   # Return only the Mantel test result and heatmaps
-  return(mantel_test = mantel_test)
+  return(list(mantel_test = mantel_test))
 }

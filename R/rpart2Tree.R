@@ -1,3 +1,4 @@
+utils::globalVariables(c("n","prob"))
 #' Convert e2tree into an rpart object
 #'
 #' It converts an e2tree output into an rpart object.
@@ -78,6 +79,30 @@
 
 rpart2Tree <- function(fit, ensemble){
 
+  # === Input Validation ===
+  
+  # Validate 'fit' (must be an 'e2tree' object)
+  if (!inherits(fit, "e2tree")) {
+    stop("Error: 'fit' must be an 'e2tree' object.")
+  }
+  
+  # Validate 'ensemble' (must be a trained 'randomForest' model)
+  if (!inherits(ensemble, "randomForest")) {
+    stop("Error: 'ensemble' must be a trained 'randomForest' model.")
+  }
+  
+  # Validate that 'fit$tree' exists and is a data frame
+  if (!is.data.frame(fit$tree)) {
+    stop("Error: 'fit$tree' must be a data frame.")
+  }
+  
+  # Validate that 'ensemble$type' is either 'classification' or 'regression'
+  if (!ensemble$type %in% c("classification", "regression")) {
+    stop("Error: 'type' in ensemble object must be either 'classification' or 'regression'.")
+  }
+
+  # === Proceed with the function ===
+
   type <- ensemble$type
 
   frame <- fit$tree
@@ -85,23 +110,23 @@ rpart2Tree <- function(fit, ensemble){
   switch(type,
          classification={
            frame <- frame %>%
-             select(.data$node,.data$variable, .data$n, .data$pred_val,.data$pred,.data$prob,.data$decImp, starts_with("yval2")) %>%
-             rename(var=.data$variable,
-                    yval=.data$pred_val)
+             select("node","variable", "n", "pred_val","pred","prob","decImp", starts_with("yval2")) %>%
+             rename("var"="variable",
+                    "yval"="pred_val")
          },
          regression={
            frame <- frame %>%
-             select(.data$node,.data$variable, .data$n, .data$pred_val,.data$pred,.data$prob,.data$decImp) %>%
-             rename(var=.data$variable,
-                    yval=.data$pred)
+             select("node","variable", "n", "pred_val","pred","prob","decImp") %>%
+             rename("var"="variable",
+                    "yval"="pred")
          })
 
    frame <- frame %>%
-    mutate(wt=.data$n,
+    mutate(wt=n,
            ncompete=0,
            nsurrogate=0,
-           complexity=1-as.numeric(.data$prob),
-           dev=.data$prob) %>%
+           complexity=1-as.numeric(prob),
+           dev=prob) %>%
     as.data.frame()
 
   rownames(frame) <- frame$node
@@ -120,8 +145,8 @@ rpart2Tree <- function(fit, ensemble){
          })
 
   obs <- fit$tree %>%
-    dplyr::filter(.data$terminal==TRUE) %>%
-    select(.data$node,.data$n,.data$obs)
+    dplyr::filter(terminal) %>%
+    select("node","n","obs")
   where <- rep(obs$node,obs$n)
   names(where) <- do.call(c,obs$obs)
   where <- where[order(as.numeric(names(where)))]

@@ -4,7 +4,7 @@
 \alias{eComparison}
 \title{Comparison of Heatmaps and Mantel Test}
 \usage{
-eComparison(data, fit, D)
+eComparison(data, fit, D, graph = TRUE)
 }
 \arguments{
 \item{data}{a data frame containing the variables in the model. It is the data frame used for ensemble learning.}

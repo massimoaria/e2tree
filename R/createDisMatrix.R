@@ -51,6 +51,33 @@ utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors 
 #' @export
 
 createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
+
+# === Input Validation ===
+  
+  # Check if 'ensemble' is NULL or not a supported model type
+  if (is.null(ensemble)) {
+    stop("Error: 'ensemble' cannot be NULL. Please provide a trained randomForest or xgboost model.")
+  }
+  
+  if (!inherits(ensemble, c("randomForest", "xgb.Booster"))) {
+    stop("Error: 'ensemble' must be of class 'randomForest' or 'xgb.Booster'.")
+  }
+  
+  # Check if 'data' is a valid data frame
+  if (!is.data.frame(data)) {
+    stop("Error: 'data' must be a valid data frame.")
+  }
+  
+  # Check if 'label' is a valid column in 'data'
+  if (!is.character(label) || length(label) != 1 || !(label %in% colnames(data))) {
+    stop("Error: 'label' must be a valid column name in 'data'.")
+  }
+  
+  # Check if 'parallel' is a logical value
+  if (!is.logical(parallel) || length(parallel) != 1) {
+    stop("Error: 'parallel' must be a logical (TRUE/FALSE) value.")
+  }
+
   row.names(data) <- NULL
   
   # Determine the type of the ensemble (e.g, regression or classification)

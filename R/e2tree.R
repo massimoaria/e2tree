@@ -74,8 +74,47 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 
 
 e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)){
-  row.names(data) = NULL
   
+  # === Input Validation ===
+  
+  # Validate formula
+  if (!inherits(formula, "formula")) {
+    stop("Error: 'formula' must be a valid formula object.")
+  }
+  
+  # Validate data
+  if (!is.data.frame(data) || nrow(data) == 0) {
+    stop("Error: 'data' must be a non-empty data frame.")
+  }
+  
+  # Validate D (dissimilarity matrix)
+  if (!is.matrix(D) || nrow(D) != ncol(D)) {
+    stop("Error: 'D' must be a square dissimilarity matrix.")
+  }
+  
+  # Validate ensemble
+  if (!inherits(ensemble, "randomForest")) {
+    stop("Error: 'ensemble' must be a trained 'randomForest' model.")
+  }
+
+  # Validate ensemble type
+  if (!ensemble$type %in% c("classification", "regression")) {
+    stop("Error: 'type' in ensemble object must be either 'classification' or 'regression'.")
+  }
+  
+  # Validate setting
+  if (!is.list(setting) || !all(c("impTotal", "maxDec", "n", "level") %in% names(setting))) {
+    stop("Error: 'setting' must be a list with keys: 'impTotal', 'maxDec', 'n', and 'level'.")
+  }
+  
+  # Ensure all setting values are numeric and positive
+  if (!all(sapply(setting, is.numeric)) || any(unlist(setting) <= 0)) {
+    stop("Error: All values in 'setting' must be positive numeric values.")
+  }
+  
+  # === Proceed with the function ===
+  
+  row.names(data) = NULL
   Call <- match.call()
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data"), names(mf), 0L)

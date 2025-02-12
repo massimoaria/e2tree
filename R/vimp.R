@@ -18,6 +18,46 @@ utils::globalVariables(c("decImp", "n", "pred", "variable", "Nimp", "vimp", "dec
 #' @export
 #'
 vimp <- function(fit, data, type = "classification") {
+
+     # === Input Validation ===
+  
+  # Validate 'fit' (must be an 'e2tree' object)
+  if (!inherits(fit, "e2tree")) {
+    stop("Error: 'fit' must be an 'e2tree' object.")
+  }
+  
+  # Validate 'data' (must be a non-empty data frame)
+  if (!is.data.frame(data) || nrow(data) == 0) {
+    stop("Error: 'data' must be a non-empty data frame.")
+  }
+  
+  # Validate 'type' (must be either 'classification' or 'regression')
+  if (!type %in% c("classification", "regression")) {
+    stop("Error: 'type' must be either 'classification' or 'regression'.")
+  }
+  
+  # Validate 'fit$tree' (must be a data frame)
+  if (!is.data.frame(fit$tree)) {
+    stop("Error: 'fit$tree' must be a data frame.")
+  }
+  
+  # Validate that 'fit$terms' exists
+  if (is.null(fit$terms)) {
+    stop("Error: 'fit$terms' is missing or NULL in the e2tree object.")
+  }
+  
+  data <- as.data.frame(data)
+  row.names(data) <- NULL
+  tree <- fit$tree
+  response_var <- names(attr(fit$terms, "dataClasses"))[1]
+  
+  # Validate that response_var exists in data
+  if (!response_var %in% colnames(data)) {
+    stop("Error: The response variable from 'fit' is not found in 'data'.")
+  }
+
+  # === Proceed with the function  ===
+
   data <- as.data.frame(data)
   row.names(data) <- NULL
   tree <- fit$tree
