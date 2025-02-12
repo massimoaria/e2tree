@@ -8,7 +8,7 @@ eStoppingRules <- function(y,index,t, setting, response, ensemble, vart1){
              res <- as.numeric(moda(response[index])[2])
            },
            regression={
-             res <- 1-(var(response[index])/vart1)
+             res <- 1-(variance(response[index])/vart1)
            }
     )
   } else {impTotal <- 0

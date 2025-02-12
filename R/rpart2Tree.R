@@ -36,7 +36,7 @@
 #' 
 #' D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
 #' 
-#' setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
+#' setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 #' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 #'
 #' # Convert e2tree into an rpart object:
@@ -63,7 +63,7 @@
 #' 
 #' D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
 #' 
-#' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=5, level=5, tMax=5)
+#' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 #' tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
 #' 
 #' # Convert e2tree into an rpart object:

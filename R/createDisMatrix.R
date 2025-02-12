@@ -1,4 +1,4 @@
-utils::globalVariables(c("resp", "W")) # to avoid CRAN check errors for tidyverse programming
+utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors for tidyverse programming
 #' Dissimilarity matrix
 #'
 #' The function createDisMatrix creates a dissimilarity matrix among observations from an ensemble tree.
@@ -66,12 +66,12 @@ createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
          },
          xgb.Booster = 
            {
-           # If the ensemble is an xgboost model, get the leaf indices for each tree
-           obs <- as.data.frame(predict(ensemble, newdata = data_XGB, predleaf = TRUE))
-           # Remove columns with all zeros
-           obs <- obs[, colSums(obs) != 0L] #PROBABILMENTE NON SERVE, PERCHE NON HO PIU IL NUMERO MAX DI ALBERI PRODOTTI
-           n_tree <- ensemble$niter
-         })
+             # If the ensemble is an xgboost model, get the leaf indices for each tree
+             obs <- as.data.frame(predict(ensemble, newdata = data_XGB, predleaf = TRUE))
+             # Remove columns with all zeros
+             obs <- obs[, colSums(obs) != 0L] #PROBABILMENTE NON SERVE, PERCHE NON HO PIU IL NUMERO MAX DI ALBERI PRODOTTI
+             n_tree <- ensemble$niter
+           })
   
   # Ensure data is a data.frame and the response is a factor
   class(data) <- "data.frame"
@@ -130,8 +130,8 @@ createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
     
     # Parallel computation
     #results <- foreach(i = seq_len(ensemble$ntree), .packages = c('dplyr', 'Matrix')) %dopar% {
-    results <- foreach(i = seq_len(ntree), .packages = c('dplyr', 'Matrix')) %dopar% {
-      cooccurrences(type, obs, w, i)
+    results <- foreach(i = seq_len(ntree), .packages = c("Rcpp")) %dopar% {
+      compute_cooccurrences_cpp(type, obs, w, i)
     }
     
     # Update progress bar and combine results
@@ -144,8 +144,10 @@ createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
     
   } else {
     cat("Regression Framework\n")
-    maxvar <- diff(range(obs$resp))^2L / 9L
-
+    #maxvar <- variance(obs$resp)
+    #maxvar <- diff(range(obs$resp))^2L / 9L
+    #maxvar <- var(obs$resp)*(nrow(obs)-1)/nrow(obs) # population variance 
+    
     
     # Progress bar setup
     # pb <- txtProgressBar(min = 0L, max = ensemble$ntree, style = 3L)
@@ -153,8 +155,8 @@ createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
     
     # Parallel computation
     #results <- foreach(i = seq_len(ensemble$ntree), .packages = c('dplyr', 'Matrix')) %dopar% {
-    results <- foreach(i = seq_len(n_tree), .packages = c('dplyr', 'Matrix')) %dopar% {
-      cooccurrences(type, obs, w, i, maxvar)
+    results <- foreach(i = seq_len(ntree), .packages = c("Rcpp")) %dopar% {
+      compute_cooccurrences_cpp(type, obs, w, i, maxvar = diff(range(obs$resp))^2 / 9L)
     }
     
     # Update progress bar and combine results
@@ -182,62 +184,10 @@ createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
 }
 
 
-
-
-
-
-## Main function
-cooccurrences <- function(type, obs, w, i, maxvar=NA) {
-  # Group data based on the tree node corresponding to column (i + 1L)
-  
-  if (type == "classification") {
-    R <- obs %>%
-      group_by(pick(i + 1L)) %>%
-      select(i + 1L, resp) %>%  # Select the node column and the response (resp)
-      mutate(n=n(),
-             freq = as.numeric(moda(resp)[2L])) %>%  # Find the mode of the responses and its frequency
-      select(-resp, -n) %>%  # Remove the 'resp' and 'n' columns no longer needed
-      distinct() %>%  
-      as.data.frame()  # Convert the result to a data frame
-  } else {
-    R <- obs %>%
-      group_by(pick(i + 1L)) %>%
-      select(i + 1L, resp) %>%  # Select the node column and the response (resp)
-      mutate(W = 1L - var(resp) / maxvar,  # Calculate weight based on variance
-             W = if_else(W < 0L, 0L, W)) %>%  # Ensure no negative weights
-      select(-resp) %>%  # Remove the 'resp' and 'n' columns no longer needed
-      distinct() %>%  
-      replace_na(list(W=0)) %>%
-      as.data.frame() # Convert the result to a data frame
-  }
-  
-  # Map the calculated weights to the corresponding column of the matrix w
-  # w[, i] <- R[match(obs[, i + 1L], R[, 1L]), 2L]
-  w[,i] <- R[as.numeric(factor(obs[,i+1L])),2L]
-  
-  # Perform garbage collection to free unused memory
-  gc()  
-  
-  # Initialize a sparse matrix for co-occurrences
-  co_occurrences <- Matrix(0L, nrow(obs), nrow(obs), sparse = TRUE)
-  
-  # Identify the unique node IDs
-  node_ids <- unique(obs[, i + 1L])
-  
-  # For each unique node ID
-  for (node in node_ids) {
-    # Find the indices of the observations that belong to the current node
-    indices <- which(obs[, i + 1L] == node)
-    # Update the co-occurrence matrix with the corresponding weights
-    co_occurrences[indices, indices] <- w[indices, i]
-  }
-  
-  # Return the co-occurrence matrix
-  return(co_occurrences)
+## Variance
+variance <- function(x){
+  sum((x-mean(x))^2)/length(x)
 }
-
-
-
 
 
 maxValue <- function(x,y){

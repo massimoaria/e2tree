@@ -103,7 +103,7 @@ D = createDisMatrix(ensemble, data = training, label = "Species", parallel = TRU
 setting e2tree parameters
 
 ```{r}
-setting=list(impTotal=0.1, maxDec=0.01, n=5, level=5, tMax=5)
+setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 ```
 
 
