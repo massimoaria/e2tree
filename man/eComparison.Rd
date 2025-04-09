@@ -12,17 +12,19 @@ eComparison(data, fit, D, graph = TRUE)
 \item{fit}{is e2tree object.}
 
 \item{D}{is the dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model. The dissimilarity matrix is obtained with the \link{createDisMatrix} function.}
+
+\item{graph}{A logical value (default: TRUE⁠). If TRUE⁠, heatmaps of both matrices are generated and displayed.}
 }
 \value{
 A list containing three elements:
 \itemize{
-\item \code{RF HeatMap}: A heatmap plot of the Random Forest-derived dissimilarity matrix.
+\item \code{RF HeatMap}: A heatmap plot of the Random Forest-derived proximity matrix.
 \item \code{E2Tree HeatMap}: A heatmap plot of the E2Tree-estimated matrix.
 \item \code{Mantel Test}: Results of the Mantel test, including the correlation coefficient and significance level.
 }
 }
 \description{
-This function processes heatmaps for visual comparison and performs the Mantel testbetween a dissimilarity matrix derived from Random Forest outputs and a matrix estimated
+This function processes heatmaps for visual comparison and performs the Mantel test between a proximity matrix derived from Random Forest outputs and a matrix estimated
 by E2Tree. Heatmaps are generated for both matrices. The Mantel test quantifies the correlation between the matrices, offering a statistical measure of similarity.
 }
 \examples{
@@ -42,7 +44,8 @@ response_validation <- validation[,5]
 ensemble <- randomForest::randomForest(Species ~ ., data=training, 
 importance=TRUE, proximity=TRUE)
 
-D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
+D <- createDisMatrix(ensemble, data=training, label = "Species", 
+                          parallel = list(active=FALSE, no_cores = 1))
 
 setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 tree <- e2tree(Species ~ ., training, D, ensemble, setting)
@@ -65,11 +68,13 @@ response_validation <- validation[,1]
 ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
 importance=TRUE, proximity=TRUE)
 
-D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
+D = createDisMatrix(ensemble, data=training, label = "mpg", 
+                          parallel = list(active=FALSE, no_cores = 1))  
 
 setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
 
+eComparison(training, tree, D)
 
 }
 

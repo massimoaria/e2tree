@@ -14,7 +14,7 @@ test_that("createDisMatrix works correctly for classification task", {
   ensemble <- randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
   
   # Compute dissimilarity matrix
-  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = FALSE)
+  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = list(active=FALSE, no_cores = 1))
   
   # Tests
   expect_type(D, "double")  # Should return a numeric matrix
@@ -35,7 +35,7 @@ test_that("createDisMatrix works correctly for regression task", {
   ensemble <- randomForest(mpg ~ ., data = training, ntree = 100, importance = TRUE, proximity = TRUE)
   
   # Compute dissimilarity matrix
-  D <- createDisMatrix(ensemble, data = training, label = "mpg", parallel = FALSE)
+  D <- createDisMatrix(ensemble, data = training, label = "mpg", parallel = list(active=FALSE, no_cores = 1))
   
   # Tests
   expect_type(D, "double")
@@ -62,6 +62,7 @@ test_that("createDisMatrix handles incorrect input types", {
 })
 
 test_that("createDisMatrix works with parallelization", {
+
   set.seed(42)
   
   data(iris)
@@ -69,9 +70,9 @@ test_that("createDisMatrix works with parallelization", {
   training <- iris[train_idx, ]
   
   ensemble <- randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
-  
+
   # Compute dissimilarity matrix in parallel
-  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = TRUE)
+  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = list(active=TRUE, no_cores = 1))
   
   expect_true(is.matrix(D))
   expect_equal(dim(D), c(nrow(training), nrow(training)))

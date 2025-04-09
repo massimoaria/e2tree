@@ -15,9 +15,39 @@ roc(response, scores, target = "1")
 }
 \value{
 an object.
-
-#examples
 }
 \description{
-It calculates roc curve
+Computes and plots the Receiver Operating Characteristic (ROC) curve for a binary classification model,
+along with the Area Under the Curve (AUC). The ROC curve is a graphical representation of a classifier’s
+performance across all classification thresholds.
+}
+\examples{
+\donttest{
+## Classification:
+data(iris)
+
+# Create training and validation set:
+smp_size <- floor(0.75 * nrow(iris))
+train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+training <- iris[train_ind, ]
+validation <- iris[-train_ind, ]
+response_training <- training[,5]
+response_validation <- validation[,5]
+
+# Perform training:
+ensemble <- randomForest::randomForest(Species ~ ., data=training, 
+importance=TRUE, proximity=TRUE)
+
+D <- createDisMatrix(ensemble, data=training, label = "Species", 
+                            parallel = list(active=FALSE, no_cores = 1))
+
+setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
+tree <- e2tree(Species ~ ., training, D, ensemble, setting)
+
+pr <- ePredTree(tree, validation, target="setosa")
+
+roc(response_training, scores = pr$score, target = "setosa")
+ 
+}
+
 }

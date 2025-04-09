@@ -6,9 +6,14 @@ utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors 
 #' @param ensemble is an ensemble tree object (for the moment ensemble works only with random forest objects)
 #' @param data a data frame containing the variables in the model. It is the data frame used for ensemble learning.
 #' @param label is a character. It indicates the response label.
-#' @param parallel to speed up your code. Run all the process in parallel on your laptop using your cores-1
-#'
-#' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model.
+#' @param parallel A list with two elements: \code{active} (logical) and \code{no_cores} (integer). 
+#' If \code{active = TRUE}, the function performs parallel computation using the number of cores specified in \code{no_cores}. 
+#' If \code{no_cores} is NULL or equal to 0, it defaults to using all available cores minus one. 
+#' If \code{active = FALSE}, the function runs on a single core. 
+#' Default: \code{list(active = FALSE, no_cores = 1)}.
+#' 
+#' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations 
+#' concerning a given classifier of a random forest model.
 #'
 #' @examples
 #' \donttest{
@@ -27,7 +32,9 @@ utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors 
 #' ensemble <- randomForest::randomForest(Species ~ ., data=training,
 #' importance=TRUE, proximity=TRUE)
 #' 
-#' D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
+#' D <- createDisMatrix(ensemble, data=training, 
+#'                      label = "Species", 
+#'                      parallel = list(active=FALSE, no_cores = 1))
 #'
 #'
 #' ## Regression
@@ -45,12 +52,14 @@ utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors 
 #' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
 #' importance=TRUE, proximity=TRUE)
 #' 
-#' D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
+#' D = createDisMatrix(ensemble, data=training, 
+#'                         label = "mpg", 
+#'                        parallel = list(active=FALSE, no_cores = 1))  
 #' 
 #' }
 #' @export
 
-createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
+createDisMatrix <- function(ensemble, data, label, parallel = list(active=FALSE, no_cores = 1)) {
 
 # === Input Validation ===
   
@@ -73,10 +82,10 @@ createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
     stop("Error: 'label' must be a valid column name in 'data'.")
   }
   
-  # Check if 'parallel' is a logical value
-  if (!is.logical(parallel) || length(parallel) != 1) {
-    stop("Error: 'parallel' must be a logical (TRUE/FALSE) value.")
-  }
+  # # Check if 'parallel' is a logical value
+  # if (!is.logical(parallel) || length(parallel) != 1) {
+  #   stop("Error: 'parallel' must be a logical (TRUE/FALSE) value.")
+  # }
 
   row.names(data) <- NULL
   
@@ -135,15 +144,19 @@ createDisMatrix <- function(ensemble, data, label, parallel = FALSE) {
   w <- matrix(NA, nrow(obs), ntree)  # Matrix to store weights
   a <- Matrix(0L, nrow(obs), nrow(obs), sparse = TRUE)  # Sparse matrix for co-occurrences
   
-  # Register parallel backend
-  if (parallel == TRUE) {
-    # If parallel processing is enabled, use all minus one core
-    no_cores <- detectCores() - 1L
+  # === Parallel Backend Registration ===
+  if (isTRUE(parallel$active)) {
+    # if not specified, no_cores -1
+    if (is.null(parallel$no_cores) || parallel$no_cores < 1L) {
+      no_cores <- max(1L, detectCores() - 1L)
+    } else {
+      no_cores <- parallel$no_cores
+    }
+    cat(paste0("Parallel mode ON (", no_cores, " cores)\n"))
     registerDoParallel(cores = no_cores)
   } else {
-    # If not using parallel processing, use one core
-    no_cores <- detectCores() - (max(detectCores()) - 1)  
-    registerDoParallel(cores = no_cores)
+    cat("Parallel mode OFF (1 core)\n")
+    registerDoParallel(cores = 1L)
   }
   
   

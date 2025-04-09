@@ -14,13 +14,39 @@ test_that("e2tree works correctly for classification", {
   ensemble <- randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
   
   # Create dissimilarity matrix
-  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = FALSE)
+  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = list(active=FALSE, no_cores = 1))
   
   # Define settings
   setting <- list(impTotal = 0.1, maxDec = 0.01, n = 2, level = 5)
   
   # Run e2tree
   tree <- e2tree(Species ~ ., training, D, ensemble, setting)
+  
+  # Tests
+  expect_type(tree, "list")  # Must return a list
+  expect_true("tree" %in% names(tree))  # Must contain a tree object
+  expect_true(is.data.frame(tree$tree))  # The tree should be a data frame
+})
+
+test_that("e2tree works correctly for regression", {
+  set.seed(42)
+  
+  # Prepare data
+  data(mtcars)
+  train_idx <- sample(seq_len(nrow(mtcars)), size = 0.75 * nrow(mtcars))
+  training <- mtcars[train_idx, ]
+  
+  # Train Random Forest
+  ensemble <- randomForest(mpg ~ ., data = training, importance = TRUE, proximity = TRUE)
+  
+  # Create dissimilarity matrix
+  D <- createDisMatrix(ensemble, data = training, label = "mpg", parallel = list(active=FALSE, no_cores = 1))
+  
+  # Define settings
+  setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
+  
+  # Run e2tree
+  tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
   
   # Tests
   expect_type(tree, "list")  # Must return a list
@@ -36,7 +62,7 @@ test_that("e2tree handles incorrect input types", {
   training <- iris[train_idx, ]
   
   ensemble <- randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
-  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = FALSE)
+  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = list(active=FALSE, no_cores = 1))
   setting <- list(impTotal = 0.1, maxDec = 0.01, n = 2, level = 5)
 
   # Test incorrect inputs
@@ -68,7 +94,7 @@ test_that("e2tree handles incorrect settings", {
   training <- iris[train_idx, ]
   
   ensemble <- randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
-  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = FALSE)
+  D <- createDisMatrix(ensemble, data = training, label = "Species", parallel = list(active=FALSE, no_cores = 1))
 
   # Incorrect settings
   bad_setting1 <- list(impTotal = -0.1, maxDec = 0.01, n = 2, level = 5)

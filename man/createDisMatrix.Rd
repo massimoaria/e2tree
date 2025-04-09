@@ -4,7 +4,12 @@
 \alias{createDisMatrix}
 \title{Dissimilarity matrix}
 \usage{
-createDisMatrix(ensemble, data, label, parallel = FALSE)
+createDisMatrix(
+  ensemble,
+  data,
+  label,
+  parallel = list(active = FALSE, no_cores = 1)
+)
 }
 \arguments{
 \item{ensemble}{is an ensemble tree object (for the moment ensemble works only with random forest objects)}
@@ -13,10 +18,15 @@ createDisMatrix(ensemble, data, label, parallel = FALSE)
 
 \item{label}{is a character. It indicates the response label.}
 
-\item{parallel}{to speed up your code. Run all the process in parallel on your laptop using your cores-1}
+\item{parallel}{A list with two elements: \code{active} (logical) and \code{no_cores} (integer).
+If \code{active = TRUE}, the function performs parallel computation using the number of cores specified in \code{no_cores}.
+If \code{no_cores} is NULL or equal to 0, it defaults to using all available cores minus one.
+If \code{active = FALSE}, the function runs on a single core.
+Default: \code{list(active = FALSE, no_cores = 1)}.}
 }
 \value{
-A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model.
+A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations
+concerning a given classifier of a random forest model.
 }
 \description{
 The function createDisMatrix creates a dissimilarity matrix among observations from an ensemble tree.
@@ -38,7 +48,9 @@ response_validation <- validation[,5]
 ensemble <- randomForest::randomForest(Species ~ ., data=training,
 importance=TRUE, proximity=TRUE)
 
-D <- createDisMatrix(ensemble, data=training, label = "Species", parallel = FALSE)
+D <- createDisMatrix(ensemble, data=training, 
+                     label = "Species", 
+                     parallel = list(active=FALSE, no_cores = 1))
 
 
 ## Regression
@@ -56,7 +68,9 @@ response_validation <- validation[,1]
 ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
 importance=TRUE, proximity=TRUE)
 
-D = createDisMatrix(ensemble, data=training, label = "mpg", parallel = FALSE)  
+D = createDisMatrix(ensemble, data=training, 
+                        label = "mpg", 
+                       parallel = list(active=FALSE, no_cores = 1))  
 
 }
 }
