@@ -11,3 +11,4 @@
 ^pkgdown$
 Appunti$
 ^cran-comments\.md$
+^CRAN-SUBMISSION$
