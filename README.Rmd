@@ -96,7 +96,7 @@ ensemble = randomForest(Species ~ ., data = training, importance = TRUE, proximi
 Here, we create the dissimilarity matrix between observations through the createDisMatrix function
 
 ```{r}
-D = createDisMatrix(ensemble, data = training, label = "Species", parallel = TRUE)
+D = createDisMatrix(ensemble, data = training, label = "Species", parallel = list(active = FALSE, no_cores = NULL))
 #dis <- 1-rf$proximity
 ```
 

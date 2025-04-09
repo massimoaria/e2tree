@@ -13,7 +13,7 @@ eComparison(data, fit, D, graph = TRUE)
 
 \item{D}{is the dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model. The dissimilarity matrix is obtained with the \link{createDisMatrix} function.}
 
-\item{graph}{A logical value (default: TRUE⁠). If TRUE⁠, heatmaps of both matrices are generated and displayed.}
+\item{graph}{A logical value (default: TRUE). If TRUE, heatmaps of both matrices are generated and displayed.}
 }
 \value{
 A list containing three elements:

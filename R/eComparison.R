@@ -8,7 +8,7 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 #' @param data a data frame containing the variables in the model. It is the data frame used for ensemble learning.
 #' @param fit is e2tree object.
 #' @param D is the dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model. The dissimilarity matrix is obtained with the \link{createDisMatrix} function.
-#' @param graph A logical value (default: TRUE⁠). If TRUE⁠, heatmaps of both matrices are generated and displayed.
+#' @param graph A logical value (default: TRUE). If TRUE, heatmaps of both matrices are generated and displayed.
 #'
 #' @return A list containing three elements:
 #'   \itemize{

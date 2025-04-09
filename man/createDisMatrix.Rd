@@ -14,7 +14,7 @@ createDisMatrix(
 \arguments{
 \item{ensemble}{is an ensemble tree object (for the moment ensemble works only with random forest objects)}
 
-\item{data}{a data frame containing the variables in the model. It is the data frame used for ensemble learning.}
+\item{data}{is a data frame containing the variables in the model. It is the data frame used for ensemble learning.}
 
 \item{label}{is a character. It indicates the response label.}
 

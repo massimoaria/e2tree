@@ -4,7 +4,7 @@ utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors 
 #' The function createDisMatrix creates a dissimilarity matrix among observations from an ensemble tree.
 #'
 #' @param ensemble is an ensemble tree object (for the moment ensemble works only with random forest objects)
-#' @param data a data frame containing the variables in the model. It is the data frame used for ensemble learning.
+#' @param data is a data frame containing the variables in the model. It is the data frame used for ensemble learning.
 #' @param label is a character. It indicates the response label.
 #' @param parallel A list with two elements: \code{active} (logical) and \code{no_cores} (integer). 
 #' If \code{active = TRUE}, the function performs parallel computation using the number of cores specified in \code{no_cores}. 
