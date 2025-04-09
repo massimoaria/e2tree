@@ -15,9 +15,59 @@ vimp(fit, data, type = "classification")
 }
 \value{
 a data frame containing variable importance metrics.
-
-#examples
 }
 \description{
 It calculate variable importance of an explainable tree
+}
+\examples{
+\donttest{
+## Classification:
+data(iris)
+
+# Create training and validation set:
+smp_size <- floor(0.75 * nrow(iris))
+train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+training <- iris[train_ind, ]
+validation <- iris[-train_ind, ]
+response_training <- training[,5]
+response_validation <- validation[,5]
+
+# Perform training:
+ensemble <- randomForest::randomForest(Species ~ ., data=training, 
+importance=TRUE, proximity=TRUE)
+
+D <- createDisMatrix(ensemble, data=training, label = "Species", 
+                             parallel = list(active=FALSE, no_cores = 1))
+
+setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
+tree <- e2tree(Species ~ ., training, D, ensemble, setting)
+
+vimp(tree, training, type = "classification")
+
+
+## Regression
+data("mtcars")
+
+# Create training and validation set:
+smp_size <- floor(0.75 * nrow(mtcars))
+train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
+training <- mtcars[train_ind, ]
+validation <- mtcars[-train_ind, ]
+response_training <- training[,1]
+response_validation <- validation[,1]
+
+# Perform training
+ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+importance=TRUE, proximity=TRUE)
+
+D = createDisMatrix(ensemble, data=training, label = "mpg", 
+                         parallel = list(active=FALSE, no_cores = 1))  
+
+setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
+tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
+
+vimp(tree, training, type = "regression")
+
+}
+
 }

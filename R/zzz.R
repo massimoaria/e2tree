@@ -58,7 +58,7 @@ utils::globalVariables(".")
 #' @useDynLib e2tree
 #'
 .onAttach<-function(...){
-packageStartupMessage("Explainable Ensemble Tree (e2tree) \n\n",
+packageStartupMessage("Explainable Ensemble Trees (E2Tree) \n\n",
   "If you use e2tree in research, please cite: \n",
                       "Aria, M., Gnasso, A., Iorio, C., & Pandolfo, G. (2024). Explainable ensemble trees.\nComputational Statistics, 39(1), 3-19. DOI: 10.1007/s00180-022-01312-6")
 }
