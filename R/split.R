@@ -70,7 +70,7 @@ catSplit <- function(x){
     Sx[x==values[1],1] <- 1
     names(Sx) <- paste("%in% c('",values[1],"')", collapse="", sep="")
   } else if (length(values)<2){  #Single value variables
-    cat("\nYou selected a variable with constant value!!!!\n")
+    message("\nYou selected a variable with constant value!!!!\n")
     return()
   }
   return(Sx)
@@ -95,7 +95,7 @@ ordSplit <- function(x){
 
     return(Sx)}
   else{
-    cat("\nYou selected a variable with constant value!!!!\n")
+    message("\nYou selected a variable with constant value!!!!\n")
     return()
   }
 }

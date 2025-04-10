@@ -8,7 +8,8 @@ createDisMatrix(
   ensemble,
   data,
   label,
-  parallel = list(active = FALSE, no_cores = 1)
+  parallel = list(active = FALSE, no_cores = 1),
+  verbose = FALSE
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ If \code{active = TRUE}, the function performs parallel computation using the nu
 If \code{no_cores} is NULL or equal to 0, it defaults to using all available cores minus one.
 If \code{active = FALSE}, the function runs on a single core.
 Default: \code{list(active = FALSE, no_cores = 1)}.}
+
+\item{verbose}{Logical. If TRUE, the function prints progress messages and other information during execution. If FALSE (the default), messages are suppressed.}
 }
 \value{
 A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations

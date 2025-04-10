@@ -11,6 +11,7 @@ utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors 
 #' If \code{no_cores} is NULL or equal to 0, it defaults to using all available cores minus one. 
 #' If \code{active = FALSE}, the function runs on a single core. 
 #' Default: \code{list(active = FALSE, no_cores = 1)}.
+#' @param verbose Logical. If TRUE, the function prints progress messages and other information during execution. If FALSE (the default), messages are suppressed.
 #' 
 #' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations 
 #' concerning a given classifier of a random forest model.
@@ -59,7 +60,7 @@ utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors 
 #' }
 #' @export
 
-createDisMatrix <- function(ensemble, data, label, parallel = list(active=FALSE, no_cores = 1)) {
+createDisMatrix <- function(ensemble, data, label, parallel = list(active=FALSE, no_cores = 1), verbose=FALSE) {
 
 # === Input Validation ===
   
@@ -152,21 +153,20 @@ createDisMatrix <- function(ensemble, data, label, parallel = list(active=FALSE,
     } else {
       no_cores <- parallel$no_cores
     }
-    cat(paste0("Parallel mode ON (", no_cores, " cores)\n"))
+    if (verbose) message(paste0("Parallel mode ON (", no_cores, " cores)\n"))
     registerDoParallel(cores = no_cores)
   } else {
-    cat("Parallel mode OFF (1 core)\n")
+    if (verbose) message("Parallel mode OFF (1 core)\n")
     registerDoParallel(cores = 1L)
   }
   
+  if (verbose) pb <- txtProgressBar(min = 0L, max = n_tree, style = 3L)
   
   ## Start the computation
   if (type == "classification") {
-    cat("Classification Framework\n")
-    
-    # Progress bar setup
-    # pb <- txtProgressBar(min = 0L, max = ensemble$ntree, style = 3L)
-    pb <- txtProgressBar(min = 0L, max = n_tree, style = 3L)
+    if (verbose){
+      message("Classification Framework\n")
+    } 
     
     # Parallel computation
     #results <- foreach(i = seq_len(ensemble$ntree), .packages = c('dplyr', 'Matrix')) %dopar% {
@@ -176,22 +176,13 @@ createDisMatrix <- function(ensemble, data, label, parallel = list(active=FALSE,
     
     # Update progress bar and combine results
     for (i in seq_along(results)) {
-      setTxtProgressBar(pb, i)
+      if (verbose) setTxtProgressBar(pb, i)
       a <- as.matrix(a + results[[i]])
     }
-    close(pb)
     stopImplicitCluster()
     
   } else {
-    cat("Regression Framework\n")
-    #maxvar <- variance(obs$resp)
-    #maxvar <- diff(range(obs$resp))^2L / 9L
-    #maxvar <- var(obs$resp)*(nrow(obs)-1)/nrow(obs) # population variance 
-    
-    
-    # Progress bar setup
-    # pb <- txtProgressBar(min = 0L, max = ensemble$ntree, style = 3L)
-    pb <- txtProgressBar(min = 0L, max = n_tree, style = 3L)
+    if (verbose) message("Regression Framework\n")
     
     # Parallel computation
     #results <- foreach(i = seq_len(ensemble$ntree), .packages = c('dplyr', 'Matrix')) %dopar% {
@@ -201,12 +192,13 @@ createDisMatrix <- function(ensemble, data, label, parallel = list(active=FALSE,
     
     # Update progress bar and combine results
     for (i in seq_along(results)) {
-      setTxtProgressBar(pb, i)
+      if (verbose) setTxtProgressBar(pb, i)
       a <- as.matrix(a + results[[i]])
     }
-    close(pb)
     stopImplicitCluster()
   }
+  
+  if (verbose) close(pb)
   
   # Similarity matrix
   ## a is the similarity matrix
