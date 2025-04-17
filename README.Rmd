@@ -141,13 +141,6 @@ plot_e2tree <- rpart.plot::rpart.plot(expl_plot,
 ```
 
 
-
-Let's have a look at the output
-
-```{r}
-tree %>% glimpse()
-```
-
 Prediction with the new tree (example on training)
 
 ```{r}
