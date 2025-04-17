@@ -11,6 +11,10 @@ status](https://www.r-pkg.org/badges/version/e2tree)](https://CRAN.R-project.org
 [![](http://cranlogs.r-pkg.org/badges/grand-total/e2tree)](https://cran.r-project.org/package=e2tree)
 
 <!-- badges: end -->
+<p align="center">
+<img src="e2tree_logo.png" width="400"  />
+</p>
+<!--![](images/tall_logo.jpg){width="685"}-->
 
 The Explainable Ensemble Trees (e2tree) key idea consists of the
 definition of an algorithm to represent every ensemble approach based on

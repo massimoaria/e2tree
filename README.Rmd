@@ -12,6 +12,12 @@ output: github_document
 
 <!-- badges: end -->
 
+<p align="center">
+<img src="e2tree_logo.png" width="400"  />
+</p>
+<!--![](images/tall_logo.jpg){width="685"}-->
+
+
 The Explainable Ensemble Trees (e2tree) key idea consists of the definition of an algorithm to represent every ensemble approach based on decision trees model using a single tree-like structure. The goal is to explain the results from the esemble algorithm while preserving its level of accuracy, which always outperforms those provided by a decision tree. The proposed method is based on identifying the relationship tree-like structure explaining the classification or regression paths summarizing the whole ensemble process. There are two main advantages of e2tree:
 - building an explainable tree that ensures the predictive performance of an RF model - allowing the decision-maker to manage with an intuitive structure (such as a tree-like structure).
 
