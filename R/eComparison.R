@@ -178,9 +178,8 @@ eComparison <- function(data, fit, D, graph = TRUE) {
 
   print(mantel_test)
   # Return only the Mantel test result and heatmaps
-  invisible(results)#, 
-              #Proximity_matrix_e2tree = prox_matrix_e2tree,
-              #Proximity_matrix_ensemble = prox_matrix_ens))
+  invisible(results) 
+
 }
 
 
