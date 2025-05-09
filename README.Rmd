@@ -8,7 +8,14 @@ output: github_document
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/massimoaria/e2tree/actions/workflows/R-CMD-check.yaml)
+[![CRAN status](https://www.r-pkg.org/badges/version/e2tree)](https://CRAN.R-project.org/package=e2tree) `r badger::badge_cran_download("e2tree", "grand-total")`
+
 <!-- badges: end -->
+
+<p align="center">
+<img src="e2tree_logo.png" width="400"  />
+</p>
+
 
 The Explainable Ensemble Trees (e2tree) key idea consists of the definition of an algorithm to represent every ensemble approach based on decision trees model using a single tree-like structure. The goal is to explain the results from the esemble algorithm while preserving its level of accuracy, which always outperforms those provided by a decision tree. The proposed method is based on identifying the relationship tree-like structure explaining the classification or regression paths summarizing the whole ensemble process. There are two main advantages of e2tree:
 - building an explainable tree that ensures the predictive performance of an RF model - allowing the decision-maker to manage with an intuitive structure (such as a tree-like structure).
@@ -33,6 +40,12 @@ You can install the developer version of e2tree from [GitHub](https://github.com
 ```{r eval=FALSE}
 install.packages("remotes")
 remotes::install_github("massimoaria/e2tree")
+```
+
+You can install the released version of e2tree from [CRAN](https://CRAN.R-project.org) with:
+
+```{r eval=FALSE}
+install.packages("e2tree")
 ```
 
 ```{r warning=FALSE, message=FALSE}
@@ -61,7 +74,7 @@ The package is still under development and therefore, for the time being, there 
 
 - Only ensembles trained with the randomForest package are supported. Additional packages and approaches will be supported in the future;
 
-- Currently e2tree works only in the case of classification problems. It will gradually be extended to other problems related to the nature of the response variable: regression, counting, multivariate response, etc.
+- Currently e2tree works only in the case of classification and regression problems. It will gradually be extended to other problems related to the nature of the response variable: counting, multivariate response, etc.
 
 
 ## Example 1: IRIS dataset
@@ -69,6 +82,10 @@ The package is still under development and therefore, for the time being, there 
 In this example, we want to show the main functions of the e2tree package.
 
 Starting from the IRIS dataset, we will train an ensemble tree using the randomForest package and then subsequently use e2tree to obtain an explainable tree synthesis of the ensemble classifier.
+We run a Random Forest (RF) model, and then obtain the proximity matrix of the observations as output. The idea behind the proximity matrix: if a pair of observations is often at the a terminal node of several trees, this means that both explain an underlying relationship.
+From this we are able to calculate co-occurrences at nodes between pairs of observations and obtain a matrix O of Co-Occurrences that will then be used to construct the graphical E2Tree output. 
+The final aim will be to explain the relationship between predictors and response, reconstructing the same structure as the proximity matrix output of the RF model. 
+
 
 ```{r}
 # Set random seed to make results reproducible:
@@ -97,7 +114,6 @@ Here, we create the dissimilarity matrix between observations through the create
 
 ```{r}
 D = createDisMatrix(ensemble, data = training, label = "Species", parallel = list(active = FALSE, no_cores = NULL))
-#dis <- 1-rf$proximity
 ```
 
 setting e2tree parameters
@@ -116,16 +132,21 @@ tree <- e2tree(Species ~ ., data = training, D, ensemble, setting)
 Plot the Explainable Ensemble Tree
 ```{r}
 expl_plot <- rpart2Tree(tree, ensemble)
-rpart.plot::rpart.plot(expl_plot)
+
+# Plot using rpart.plot package:
+plot_e2tree <- rpart.plot::rpart.plot(expl_plot,
+                                      type=1,
+                                      fallen.leaves = T,
+                                      cex =0.55, 
+                                      branch.lty = 6,
+                                      nn = T, 
+                                      roundint=F, 
+                                      digits = 2,
+                                      box.palette="lightgrey" 
+                                      ) 
+
 ```
 
-
-
-Let's have a look at the output
-
-```{r}
-tree %>% glimpse()
-```
 
 Prediction with the new tree (example on training)
 
@@ -160,13 +181,6 @@ ensemble_imp <- ensemble$importance %>% as.data.frame %>%
   select(Variable, RF_Var_Imp)
 
 V <- vimp(tree, training)
-#V <- V$vimp %>% 
-#  select(Variable,MeanImpurityDecrease, `ImpDec_ setosa`, `ImpDec_ versicolor`,`ImpDec_ virginica`) %>% 
-#  mutate_at(c("MeanImpurityDecrease","ImpDec_ setosa", "ImpDec_ versicolor","ImpDec_ virginica"), round,2) %>% 
-#  left_join(ensemble_imp, by = "Variable") %>% 
-#  select(Variable, RF_Var_Imp, MeanImpurityDecrease, starts_with("ImpDec")) %>% 
-#  rename(ETree_Var_Imp = MeanImpurityDecrease)
-
 V
   
 ```
@@ -201,5 +215,18 @@ Comparison of predictions (validation sample) of e2tree and correct response
 table(pred_val$fit, response_validation)
 roc_res <- roc(response_validation, pred_val$score, target="virginica")
 roc_res$auc
+```
+
+To evaluate how well our tree captures the structure of the RF and replicates its classification, we introduce a procedure to measure the goodness of explainability.
+We start by visualizing the final partition generated by the RF through a heatmap — a graphical representation of the co-occurrence matrix, which reflects how often pairs of observations are grouped together across the ensemble.
+Each cell shows a pairwise similarity:
+the darker the cell, the closer to 1 the similarity — meaning the two observations were frequently assigned to the same leaf.
+Comparing these two matrices — both visually and statistically — allows us to assess how well E2Tree reproduces the ensemble structure.
+To formally test this alignment, we use the [Mantel test](https://aacrjournals.org/cancerres/article/27/2_Part_1/209/476508/The-Detection-of-Disease-Clustering-and-a), a statistical method that quantifies the correlation between the two matrices. The Mantel test is a non-parametric method used to assess the correlation between two distance or similarity matrices. It is particularly useful when we are interested to study the relationships between dissimilarity structures. The test uses permutation to generate a null distribution, comparing the observed statistic against values obtained under random reordering.
+
+
+
+```{r}
+eComparison(training, tree, D, graph = TRUE)
 ```
 
