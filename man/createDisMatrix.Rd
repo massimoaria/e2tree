@@ -13,26 +13,41 @@ createDisMatrix(
 )
 }
 \arguments{
-\item{ensemble}{is an ensemble tree object (for the moment ensemble works only with random forest objects)}
+\item{ensemble}{is an ensemble tree object}
 
-\item{data}{is a data frame containing the variables in the model. It is the data frame used for ensemble learning.}
+\item{data}{is a data frame containing the variables in the model. It is the
+data frame used for ensemble learning.}
 
 \item{label}{is a character. It indicates the response label.}
 
-\item{parallel}{A list with two elements: \code{active} (logical) and \code{no_cores} (integer).
-If \code{active = TRUE}, the function performs parallel computation using the number of cores specified in \code{no_cores}.
-If \code{no_cores} is NULL or equal to 0, it defaults to using all available cores minus one.
-If \code{active = FALSE}, the function runs on a single core.
-Default: \code{list(active = FALSE, no_cores = 1)}.}
+\item{parallel}{A list with two elements: \code{active} (logical) and
+\code{no_cores} (integer). If \code{active = TRUE}, the function performs
+parallel computation using the number of cores specified in
+\code{no_cores}. If \code{no_cores} is NULL or equal to 0, it defaults to
+using all available cores minus one. If \code{active = FALSE}, the function
+runs on a single core. Default: \code{list(active = FALSE, no_cores = 1)}.}
 
-\item{verbose}{Logical. If TRUE, the function prints progress messages and other information during execution. If FALSE (the default), messages are suppressed.}
+\item{verbose}{Logical. If TRUE, the function prints progress messages and
+other information during execution. If FALSE (the default), messages are
+suppressed.}
 }
 \value{
-A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations
-concerning a given classifier of a random forest model.
+A dissimilarity matrix. This is a dissimilarity matrix measuring the
+discordance between two observations concerning a given random forest
+model.
 }
 \description{
-The function createDisMatrix creates a dissimilarity matrix among observations from an ensemble tree.
+The function createDisMatrix creates a dissimilarity matrix among
+observations from an ensemble tree.
+}
+\details{
+An \code{ensemble} is a trained object of one of these classes trained
+for \emph{classification} or \emph{regression} task:
+
+\itemize{
+\item \code{randomForest}
+\item \code{ranger}
+}
 }
 \examples{
 \donttest{
@@ -51,8 +66,8 @@ response_validation <- validation[,5]
 ensemble <- randomForest::randomForest(Species ~ ., data=training,
 importance=TRUE, proximity=TRUE)
 
-D <- createDisMatrix(ensemble, data=training, 
-                     label = "Species", 
+D <- createDisMatrix(ensemble, data=training,
+                     label = "Species",
                      parallel = list(active=FALSE, no_cores = 1))
 
 
@@ -68,12 +83,12 @@ response_training <- training[,1]
 response_validation <- validation[,1]
 
 # Perform training
-ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000,
 importance=TRUE, proximity=TRUE)
 
-D = createDisMatrix(ensemble, data=training, 
-                        label = "mpg", 
-                       parallel = list(active=FALSE, no_cores = 1))  
+D = createDisMatrix(ensemble, data=training,
+                        label = "mpg",
+                       parallel = list(active=FALSE, no_cores = 1))
 
 }
 }
