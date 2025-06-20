@@ -55,8 +55,13 @@ response_training <- training[,5]
 response_validation <- validation[,5]
 
 # Perform training:
+## "randomForest" package
 ensemble <- randomForest::randomForest(Species ~ ., data=training, 
 importance=TRUE, proximity=TRUE)
+
+## "ranger" package
+ensemble <- ranger::ranger(Species ~ ., data = iris, 
+num.trees = 1000, importance = 'impurity')
 
 D <- createDisMatrix(ensemble, data=training, label = "Species", 
                               parallel = list(active=FALSE, no_cores = 1))
@@ -78,8 +83,13 @@ response_training <- training[,1]
 response_validation <- validation[,1]
 
 # Perform training
+## "randomForest" package
 ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
 importance=TRUE, proximity=TRUE)
+
+## "ranger" package
+ensemble <- ranger::ranger(formula = mpg ~ ., data = training, 
+num.trees = 1000, importance = "permutation")
 
 D = createDisMatrix(ensemble, data=training, label = "mpg", 
                                parallel = list(active=FALSE, no_cores = 1))  

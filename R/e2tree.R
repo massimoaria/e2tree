@@ -38,8 +38,13 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' response_validation <- validation[,5]
 #'
 #' # Perform training:
+#' ## "randomForest" package
 #' ensemble <- randomForest::randomForest(Species ~ ., data=training, 
 #' importance=TRUE, proximity=TRUE)
+#' 
+#' ## "ranger" package
+#' ensemble <- ranger::ranger(Species ~ ., data = iris, 
+#' num.trees = 1000, importance = 'impurity')
 #' 
 #' D <- createDisMatrix(ensemble, data=training, label = "Species", 
 #'                               parallel = list(active=FALSE, no_cores = 1))
@@ -61,8 +66,13 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' response_validation <- validation[,1]
 #' 
 #' # Perform training
+#' ## "randomForest" package
 #' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
 #' importance=TRUE, proximity=TRUE)
+#' 
+#' ## "ranger" package
+#' ensemble <- ranger::ranger(formula = mpg ~ ., data = training, 
+#' num.trees = 1000, importance = "permutation")
 #' 
 #' D = createDisMatrix(ensemble, data=training, label = "mpg", 
 #'                                parallel = list(active=FALSE, no_cores = 1))  
@@ -95,13 +105,20 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   }
   
   # Validate ensemble
-  if (!inherits(ensemble, "randomForest")) {
-    stop("Error: 'ensemble' must be a trained 'randomForest' model.")
-  }
-
-  # Validate ensemble type
-  if (!ensemble$type %in% c("classification", "regression")) {
-    stop("Error: 'type' in ensemble object must be either 'classification' or 'regression'.")
+  if (inherits(ensemble, "randomForest")) {
+    type <- ensemble$type
+    if (!type %in% c("classification", "regression")) {
+      stop("Error: 'type' in ensemble object must be 'classification' or 'regression'.")
+    }
+    
+  } else if (inherits(ensemble, "ranger")) {
+    type <- ensemble$treetype
+    if (!type %in% c("Classification", "Regression")) {
+      stop("Error: 'type' in ensemble object must be 'classification' or 'regression'.")
+    }
+    
+  } else {
+    stop("Error: 'ensemble' must be a trained 'randomForest' or 'ranger' model.")
   }
   
   # Validate setting
@@ -128,7 +145,16 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
 
   response <- mf[,1]
   X <- mf[,-1]
-  type <- ensemble$type
+  
+  # create type object
+  if (inherits(ensemble, "randomForest")) {
+    type <- ensemble$type  # "classification" or "regression"
+    
+  } else if (inherits(ensemble, "ranger")) {
+    # Convert "Classification" or "Regression" in lower case
+    type <- tolower(ensemble$treetype)
+  }
+  
   
   setting$tMax <- 1
 
@@ -260,7 +286,7 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
         #info$impTotal[t] <- results$impTotal
         info$obs[t] <- list(index)
         info$path[t] <- paths(info,t)
-      } else if (suppressWarnings(Wtest(Y=response[index], X=S[index,s], p.value=0.05, type = ensemble$type))){
+      } else if (suppressWarnings(Wtest(Y=response[index], X=S[index,s], p.value=0.05, type = type))){
         # Stopping Rule with Mann-Whitney for regression case
         # if it is regression, check that the hypothesis that the two distributions in tL and tR are equal is rejected
 

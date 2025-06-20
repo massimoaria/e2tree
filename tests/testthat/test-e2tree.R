@@ -76,14 +76,14 @@ test_that("e2tree handles incorrect input types", {
                "Error: 'D' must be a square dissimilarity matrix.")
   
   expect_error(e2tree(Species ~ ., training, D, NULL, setting), 
-               "Error: 'ensemble' must be a trained 'randomForest' model.")
+               "Error: 'ensemble' must be a trained 'randomForest' or 'ranger' model.")
   
   expect_error(e2tree(Species ~ ., training, D, ensemble, NULL), 
                "Error: 'setting' must be a list with keys: 'impTotal', 'maxDec', 'n', and 'level'.")
   
   ensemble$type <- "unknown_type"  # Modify to invalid type
   expect_error(e2tree(Species ~ ., training, D, ensemble, setting), 
-               "Error: 'type' in ensemble object must be either 'classification' or 'regression'.")
+               "Error: 'type' in ensemble object must be 'classification' or 'regression'.")
 })
 
 test_that("e2tree handles incorrect settings", {
