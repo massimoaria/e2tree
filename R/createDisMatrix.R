@@ -1,20 +1,34 @@
 utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors for tidyverse programming
+
 #' Dissimilarity matrix
 #'
-#' The function createDisMatrix creates a dissimilarity matrix among observations from an ensemble tree.
+#' The function createDisMatrix creates a dissimilarity matrix among
+#' observations from an ensemble tree.
 #'
-#' @param ensemble is an ensemble tree object (for the moment ensemble works only with random forest objects)
-#' @param data is a data frame containing the variables in the model. It is the data frame used for ensemble learning.
+#' @param ensemble is an ensemble tree object
+#' @param data is a data frame containing the variables in the model. It is the
+#'   data frame used for ensemble learning.
 #' @param label is a character. It indicates the response label.
-#' @param parallel A list with two elements: \code{active} (logical) and \code{no_cores} (integer). 
-#' If \code{active = TRUE}, the function performs parallel computation using the number of cores specified in \code{no_cores}. 
-#' If \code{no_cores} is NULL or equal to 0, it defaults to using all available cores minus one. 
-#' If \code{active = FALSE}, the function runs on a single core. 
-#' Default: \code{list(active = FALSE, no_cores = 1)}.
-#' @param verbose Logical. If TRUE, the function prints progress messages and other information during execution. If FALSE (the default), messages are suppressed.
-#' 
-#' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations 
-#' concerning a given classifier of a random forest model.
+#' @param parallel A list with two elements: \code{active} (logical) and
+#'   \code{no_cores} (integer). If \code{active = TRUE}, the function performs
+#'   parallel computation using the number of cores specified in
+#'   \code{no_cores}. If \code{no_cores} is NULL or equal to 0, it defaults to
+#'   using all available cores minus one. If \code{active = FALSE}, the function
+#'   runs on a single core. Default: \code{list(active = FALSE, no_cores = 1)}.
+#' @param verbose Logical. If TRUE, the function prints progress messages and
+#'   other information during execution. If FALSE (the default), messages are
+#'   suppressed.
+#'
+#' @return A dissimilarity matrix. This is a dissimilarity matrix measuring the
+#'   discordance between two observations concerning a given random forest
+#'   model.
+#' @details An `ensemble` is a trained object of one of these classes trained
+#'   for *classification* or *regression* task:
+#'
+#' \itemize{
+#'   \item `randomForest`
+#'   \item `ranger`
+#' }
 #'
 #' @examples
 #' \donttest{
@@ -32,15 +46,15 @@ utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors 
 #' # Perform training:
 #' ensemble <- randomForest::randomForest(Species ~ ., data=training,
 #' importance=TRUE, proximity=TRUE)
-#' 
-#' D <- createDisMatrix(ensemble, data=training, 
-#'                      label = "Species", 
+#'
+#' D <- createDisMatrix(ensemble, data=training,
+#'                      label = "Species",
 #'                      parallel = list(active=FALSE, no_cores = 1))
 #'
 #'
 #' ## Regression
 #' data("mtcars")
-#' 
+#'
 #' # Create training and validation set:
 #' smp_size <- floor(0.75 * nrow(mtcars))
 #' train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
@@ -48,15 +62,15 @@ utils::globalVariables(c("resp", "W", "data_XGB")) # to avoid CRAN check errors 
 #' validation <- mtcars[-train_ind, ]
 #' response_training <- training[,1]
 #' response_validation <- validation[,1]
-#' 
+#'
 #' # Perform training
-#' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+#' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000,
 #' importance=TRUE, proximity=TRUE)
-#' 
-#' D = createDisMatrix(ensemble, data=training, 
-#'                         label = "mpg", 
-#'                        parallel = list(active=FALSE, no_cores = 1))  
-#' 
+#'
+#' D = createDisMatrix(ensemble, data=training,
+#'                         label = "mpg",
+#'                        parallel = list(active=FALSE, no_cores = 1))
+#'
 #' }
 #' @export
 
@@ -66,11 +80,11 @@ createDisMatrix <- function(ensemble, data, label, parallel = list(active=FALSE,
   
   # Check if 'ensemble' is NULL or not a supported model type
   if (is.null(ensemble)) {
-    stop("Error: 'ensemble' cannot be NULL. Please provide a trained randomForest or xgboost model.")
+    stop("Error: 'ensemble' cannot be NULL. Please provide a trained randomForest or xgboost or ranger model.")
   }
   
-  if (!inherits(ensemble, c("randomForest", "xgb.Booster"))) {
-    stop("Error: 'ensemble' must be of class 'randomForest' or 'xgb.Booster'.")
+  if (!inherits(ensemble, c("randomForest", "xgb.Booster", "ranger"))) {
+    stop("Error: 'ensemble' must be of class 'randomForest' or 'xgb.Booster' or 'ranger'")
   }
   
   # Check if 'data' is a valid data frame
@@ -91,7 +105,24 @@ createDisMatrix <- function(ensemble, data, label, parallel = list(active=FALSE,
   row.names(data) <- NULL
   
   # Determine the type of the ensemble (e.g, regression or classification)
-  type <- ensemble$type
+  if (inherits(ensemble, "ranger")){
+    
+    type <- tolower(ensemble[["treetype"]])
+    
+    # additional check for ranger to ensure regression or classification
+    allowed_ranger_model_types <- c("classification", "regression")
+    if (!(type %in% allowed_ranger_model_types)){
+      stop("ranger model should be either a classification or regression type")
+    }
+    
+    # additional check to ensure that ranger object is predictable
+    if (is.null(ensemble$forest)){
+      stop("ranger model should be trained with `write.forest = TRUE`")
+    }
+    
+  } else {
+    type <- ensemble$type
+  }
   
   
   # Predict nodes or leaf indices based on the ensemble type
@@ -101,14 +132,32 @@ createDisMatrix <- function(ensemble, data, label, parallel = list(active=FALSE,
            obs <- as.data.frame(attr(predict(ensemble, newdata = data, nodes = TRUE), "nodes"))
            n_tree <- ensemble$ntree
          },
-         xgb.Booster = 
-           {
+         xgb.Booster = {
              # If the ensemble is an xgboost model, get the leaf indices for each tree
              obs <- as.data.frame(predict(ensemble, newdata = data_XGB, predleaf = TRUE))
              # Remove columns with all zeros
              obs <- obs[, colSums(obs) != 0L] #PROBABILMENTE NON SERVE, PERCHE NON HO PIU IL NUMERO MAX DI ALBERI PRODOTTI
              n_tree <- ensemble$niter
-           })
+         },
+         
+         # get terminal nodes from ranger object
+         ranger = {
+           
+           # obs is a data.frame with one column per tree
+           # Each row corresponds to an observation
+           # Creates an identical structure as 'randomForest'
+           obs <- 
+             predict(ensemble,
+                     data, 
+                     type = "terminalNodes", 
+                     num.threads = 1 # not to interfere with parallelization
+                     ) %>% 
+             {.$predictions} %>% 
+             as.data.frame()
+           
+           n_tree <- ensemble[["num_trees"]]
+         }
+         )
   
   # Ensure data is a data.frame and the response is a factor
   class(data) <- "data.frame"
