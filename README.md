@@ -14,7 +14,7 @@ status](https://www.r-pkg.org/badges/version/e2tree)](https://CRAN.R-project.org
 
 <p align="center">
 
-<img src="e2tree_logo.png" width="400"  />
+<img src="man/figures/e2tree_logo.png" width="400"  />
 </p>
 
 The Explainable Ensemble Trees (e2tree) key idea consists of the

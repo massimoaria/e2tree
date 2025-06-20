@@ -13,7 +13,7 @@ output: github_document
 <!-- badges: end -->
 
 <p align="center">
-<img src="e2tree_logo.png" width="400"  />
+<img src="man/figures/e2tree_logo.png" width="400"  />
 </p>
 
 
