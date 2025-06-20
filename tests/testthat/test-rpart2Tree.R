@@ -49,10 +49,10 @@ test_that("rpart2Tree handles incorrect input types (classification case)", {
                "Error: 'fit' must be an 'e2tree' object.")
   
   expect_error(rpart2Tree(fit, NULL), 
-               "Error: 'ensemble' must be a trained 'randomForest' model.")
+               "Error: 'ensemble' must be a trained 'randomForest' or 'ranger' model.")
   
   expect_error(rpart2Tree(fit, list()), 
-               "Error: 'ensemble' must be a trained 'randomForest' model.")
+               "Error: 'ensemble' must be a trained 'randomForest' or 'ranger' model.")
 })
 
 test_that("rpart2Tree handles invalid ensemble type (classification case)", {
@@ -123,10 +123,10 @@ test_that("rpart2Tree handles incorrect input types (regression case)", {
                "Error: 'fit' must be an 'e2tree' object.")
   
   expect_error(rpart2Tree(fit, NULL), 
-               "Error: 'ensemble' must be a trained 'randomForest' model.")
+               "Error: 'ensemble' must be a trained 'randomForest' or 'ranger' model.")
   
   expect_error(rpart2Tree(fit, list()), 
-               "Error: 'ensemble' must be a trained 'randomForest' model.")
+               "Error: 'ensemble' must be a trained 'randomForest' or 'ranger' model.")
 })
 
 test_that("rpart2Tree handles invalid ensemble type (regression case)", {

@@ -1,9 +1,18 @@
 eStoppingRules <- function(y,index,t, setting, response, ensemble, vart1){
   n <- length(index)
-
+  
+  # create type object
+  if (inherits(ensemble, "randomForest")) {
+    type <- ensemble$type  # "classification" o "regression"
+    
+  } else if (inherits(ensemble, "ranger")) {
+    # Convert "Classification" or "Regression" in lower case
+    type <- tolower(ensemble$treetype)
+  }
+  
   if (n>1){
     impTotal <- meanDis(y[index,index])
-    switch(ensemble$type,
+    switch(type,
            classification = {
              res <- as.numeric(moda(response[index])[2])
            },

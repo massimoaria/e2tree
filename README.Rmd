@@ -13,7 +13,7 @@ output: github_document
 <!-- badges: end -->
 
 <p align="center">
-<img src="man/figures/e2tree_logo.png" width="400"  />
+<img src="e2tree_logo.png" width="400"  />
 </p>
 
 
@@ -45,12 +45,13 @@ remotes::install_github("massimoaria/e2tree")
 You can install the released version of e2tree from [CRAN](https://CRAN.R-project.org) with:
 
 ```{r eval=FALSE}
-install.packages("e2tree")
+if (!require("e2tree", quietly=TRUE)) install.packages("e2tree")
 ```
 
 ```{r warning=FALSE, message=FALSE}
 require(e2tree)
 require(randomForest)
+require(ranger)
 require(dplyr)
 require(ggplot2)
 if (!(require(rsample, quietly=TRUE))){install.packages("rsample"); require(rsample, quietly=TRUE)} 
@@ -106,8 +107,12 @@ response_validation <- validation[,5]
 Train an Random Forest model with 1000 weak learners
 
 ```{r}
-# Perform training:
-ensemble = randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
+# Perform training with "ranger" or "randomForest" package:
+## RF with "ranger" package
+ensemble <- ranger(Species ~ ., data = training, num.trees = 1000, importance = 'impurity')
+
+## RF with "randomForest" package
+#ensemble = randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
 ```
 
 Here, we create the dissimilarity matrix between observations through the createDisMatrix function
@@ -157,13 +162,21 @@ pred <- ePredTree(tree, training[,-5], target="virginica")
 Comparison of predictions (training sample) of RF and e2tree
 
 ```{r}
-table(pred$fit, ensemble$predicted)
+# "ranger" package
+table(pred$fit, ensemble$predictions)
+
+# "randomForest" package
+#table(pred$fit, ensemble$predicted)
 ```
 
 Comparison of predictions (training sample) of RF and correct response
 
 ```{r}
-table(ensemble$predicted, response_training)
+# "ranger" package
+table(ensemble$predictions, response_training)
+
+## "randomForest" package
+#table(ensemble$predicted, response_training)
 ```
 
 Comparison of predictions (training sample) of e2tree and correct response
@@ -175,11 +188,6 @@ table(pred$fit,response_training)
 Variable Importance
 
 ```{r}
-ensemble_imp <- ensemble$importance %>% as.data.frame %>% 
-  mutate(Variable = rownames(ensemble$importance),
-         RF_Var_Imp = round(MeanDecreaseAccuracy,2)) %>% 
-  select(Variable, RF_Var_Imp)
-
 V <- vimp(tree, training)
 V
   
@@ -189,7 +197,7 @@ V
 Comparison with the validation sample
 
 ```{r}
-ensemble.pred <- predict(ensemble, validation[,-5], proximity = TRUE)
+ensemble.pred <- predict(ensemble, validation[,-5])
 
 pred_val<- ePredTree(tree, validation[,-5], target="virginica")
 ```
@@ -197,17 +205,13 @@ pred_val<- ePredTree(tree, validation[,-5], target="virginica")
 Comparison of predictions (sample validation) of RF and e2tree
 
 ```{r}
-table(pred_val$fit, ensemble.pred$predicted)
+## "ranger" package
+table(pred_val$fit, ensemble.pred$predictions)
+
+## "randomForest" package
+#table(pred_val$fit, ensemble.pred$predicted)
 ```
 
-Comparison of predictions (validation sample) of RF and correct response
-
-```{r}
-table(ensemble.pred$predicted, response_validation)
-ensemble.prob <- predict(ensemble, validation[,-5], proximity = TRUE, type="prob")
-roc_ensemble<- roc(response_validation, ensemble.prob$predicted[,"virginica"], target="virginica")
-roc_ensemble$auc
-```
 
 Comparison of predictions (validation sample) of e2tree and correct response
 

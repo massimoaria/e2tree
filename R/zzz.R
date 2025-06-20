@@ -9,6 +9,7 @@ utils::globalVariables(".")
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @import RSpectra
 #' @importFrom randomForest randomForest 
+#' @importFrom ranger ranger 
 #' @importFrom foreach foreach
 #' @importFrom foreach %dopar%
 #' @importFrom dplyr %>%
