@@ -1,6 +1,6 @@
 Package: e2tree
 Title: Explainable Ensemble Trees
-Version: 0.1.2
+Version: 0.2.0
 Authors@R: c(
     person(given = "Massimo",
            family = "Aria",
