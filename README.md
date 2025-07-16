@@ -17,7 +17,7 @@ status](https://www.r-pkg.org/badges/version/e2tree)](https://CRAN.R-project.org
 <img src="man/figures/e2tree_logo.png" width="400"  />
 </p>
 
-The Explainable Ensemble Trees (e2tree) key idea consists of the
+The **Explainable Ensemble Trees** (**e2tree**) key idea consists of the
 definition of an algorithm to represent every ensemble approach based on
 decision trees model using a single tree-like structure. The goal is to
 explain the results from the esemble algorithm while preserving its
@@ -34,7 +34,7 @@ be generalized to every ensemble approach based on decision trees.
 
 ## Setup
 
-You can install the developer version of e2tree from
+You can install the **developer version** of e2tree from
 [GitHub](https://github.com) with:
 
 ``` r
@@ -42,7 +42,7 @@ install.packages("remotes")
 remotes::install_github("massimoaria/e2tree")
 ```
 
-You can install the released version of e2tree from
+You can install the **released version** of e2tree from
 [CRAN](https://CRAN.R-project.org) with:
 
 ``` r
@@ -59,18 +59,19 @@ if (!(require(rsample, quietly=TRUE))){install.packages("rsample"); require(rsam
 options(dplyr.summarise.inform = FALSE)
 ```
 
-## Warnings
+## Warning
 
-The package is still under development and therefore, for the time
-being, there are the following limitations:
+This package is still under development and, for the time being, the
+following limitations apply:
 
-- Only ensembles trained with the randomForest package are supported.
-  Additional packages and approaches will be supported in the future;
+- Only ensembles trained with the **randomForest** and **ranger**
+  packages are currently supported. Support for additional packages and
+  approaches will be added in the future.
 
-- Currently e2tree works only in the case of classification and
-  regression problems. It will gradually be extended to other problems
-  related to the nature of the response variable: counting, multivariate
-  response, etc.
+- Currently **e2tree** works only for classification and regression
+  problems. It will gradually be extended to handle other types of
+  response variables, such as count data, multivariate responses, and
+  more.
 
 ## Example 1: IRIS dataset
 

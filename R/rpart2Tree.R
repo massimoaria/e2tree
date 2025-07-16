@@ -90,7 +90,7 @@ utils::globalVariables(c("n","prob", "terminal"))
 
 
 rpart2Tree <- function(fit, ensemble){
-
+  
   # === Input Validation ===
   
   # Validate 'fit' (must be an 'e2tree' object)
@@ -119,9 +119,9 @@ rpart2Tree <- function(fit, ensemble){
   if (!is.data.frame(fit$tree)) {
     stop("Error: 'fit$tree' must be a data frame.")
   }
-
+  
   # === Proceed with the function ===
-
+  
   # create type object
   if (inherits(ensemble, "randomForest")) {
     type <- ensemble$type  # "classification" or "regression"
@@ -130,9 +130,9 @@ rpart2Tree <- function(fit, ensemble){
     # Convert "Classification" or "Regression" in lower case
     type <- tolower(ensemble$treetype)
   }
-
+  
   frame <- fit$tree
-
+  
   switch(type,
          classification={
            frame <- frame %>%
@@ -146,20 +146,20 @@ rpart2Tree <- function(fit, ensemble){
              rename("var"="variable",
                     "yval"="pred")
          })
-
-   frame <- frame %>%
+  
+  frame <- frame %>%
     mutate(wt=n,
            ncompete=0,
            nsurrogate=0,
            complexity=1-as.numeric(prob),
            dev=prob) %>%
     as.data.frame()
-
+  
   rownames(frame) <- frame$node
   frame$var[is.na(frame$var)] <- "<leaf>"
   frame$complexity[is.na(frame$complexity)] <- 0.01
-
-
+  
+  
   switch(type,
          classification={
            frame <- frame %>%
@@ -169,28 +169,28 @@ rpart2Tree <- function(fit, ensemble){
            frame <- frame %>%
              select("var","n","wt","dev","yval","complexity","ncompete","nsurrogate")
          })
-
+  
   obs <- fit$tree %>%
     dplyr::filter(terminal) %>%
     select("node","n","obs")
   where <- rep(obs$node,obs$n)
   names(where) <- do.call(c,obs$obs)
   where <- where[order(as.numeric(names(where)))]
-
+  
   variable.importance <- fit$varimp$vimp[[2]]
   names(variable.importance) <- fit$varimp$vimp[[1]]
-
+  
   switch (type,
-    classification = {
-      obj <- list(frame=frame, where=where, call=fit$call, terms=fit$terms, method="class", control=fit$control, functions=rpartfunctions(),
-                  splits=fit$splits, csplit=fit$csplit, variable.importance=variable.importance)
-    },
-    regression = {
-      obj <- list(frame=frame, where=where, call=fit$call, terms=fit$terms, method="anova", control=fit$control, functions=rpartfunctions(),
-                  splits=fit$splits, csplit=fit$csplit, variable.importance=variable.importance)
-    }
+          classification = {
+            obj <- list(frame=frame, where=where, call=fit$call, terms=fit$terms, method="class", control=fit$control, functions=rpartfunctions(),
+                        splits=fit$splits, csplit=fit$csplit, variable.importance=variable.importance)
+          },
+          regression = {
+            obj <- list(frame=frame, where=where, call=fit$call, terms=fit$terms, method="anova", control=fit$control, functions=rpartfunctions(),
+                        splits=fit$splits, csplit=fit$csplit, variable.importance=variable.importance)
+          }
   )
-
+  
   attr(obj, "xlevels") <- attr(fit, "xlevels")
   attr(obj, "ylevels") <- attr(fit, "ylevels")
   #obj$frame <- obj$frame[as.character(fit$N),]
@@ -223,7 +223,7 @@ rpartfunctions <- function(){
            formatg(nodeprob, digits), "\n", "    class counts: ",
            temp1, "\n", "   probabilities: ", temp2)
   }
-
+  
   print <- function (yval, ylevel, digits, nsmall)
   {
     temp <- if (is.null(ylevel))
@@ -257,7 +257,7 @@ rpartfunctions <- function(){
       paste0(format(group, justify = "left"), "\n", temp1)
     else format(group, justify = "left")
   }
-
+  
   functions <- list(summary=summary, print=print, text=text)
   return(functions)
 }
@@ -266,7 +266,7 @@ formatg <- function(x, digits = getOption("digits"),
                     format = paste0("%.", digits, "g"))
 {
   if (!is.numeric(x)) stop("'x' must be a numeric vector")
-
+  
   temp <- sprintf(format, x)
   if (is.matrix(x)) matrix(temp, nrow = nrow(x)) else temp
 }

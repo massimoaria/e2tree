@@ -17,7 +17,7 @@ output: github_document
 </p>
 
 
-The Explainable Ensemble Trees (e2tree) key idea consists of the definition of an algorithm to represent every ensemble approach based on decision trees model using a single tree-like structure. The goal is to explain the results from the esemble algorithm while preserving its level of accuracy, which always outperforms those provided by a decision tree. The proposed method is based on identifying the relationship tree-like structure explaining the classification or regression paths summarizing the whole ensemble process. There are two main advantages of e2tree:
+The **Explainable Ensemble Trees** (**e2tree**) key idea consists of the definition of an algorithm to represent every ensemble approach based on decision trees model using a single tree-like structure. The goal is to explain the results from the esemble algorithm while preserving its level of accuracy, which always outperforms those provided by a decision tree. The proposed method is based on identifying the relationship tree-like structure explaining the classification or regression paths summarizing the whole ensemble process. There are two main advantages of e2tree:
 - building an explainable tree that ensures the predictive performance of an RF model - allowing the decision-maker to manage with an intuitive structure (such as a tree-like structure).
 
 In this example, we focus on Random Forest but, again, the algorithm can be generalized to every ensemble approach based on decision trees.
@@ -35,14 +35,14 @@ knitr::opts_chunk$set(
 
 ## Setup
 
-You can install the developer version of e2tree from [GitHub](https://github.com) with:
+You can install the **developer version** of e2tree from [GitHub](https://github.com) with:
 
 ```{r eval=FALSE}
 install.packages("remotes")
 remotes::install_github("massimoaria/e2tree")
 ```
 
-You can install the released version of e2tree from [CRAN](https://CRAN.R-project.org) with:
+You can install the **released version** of e2tree from [CRAN](https://CRAN.R-project.org) with:
 
 ```{r eval=FALSE}
 if (!require("e2tree", quietly=TRUE)) install.packages("e2tree")
@@ -69,13 +69,13 @@ theme_set(
 knitr::opts_chunk$set(dev.args = list(bg = "transparent"))
 ```
 
-## Warnings
+## Warning
 
-The package is still under development and therefore, for the time being, there are the following limitations:
+This package is still under development and, for the time being, the following limitations apply:
 
-- Only ensembles trained with the randomForest package are supported. Additional packages and approaches will be supported in the future;
+- Only ensembles trained with the **randomForest** and **ranger** packages are currently supported. Support for additional packages and approaches will be added in the future.
 
-- Currently e2tree works only in the case of classification and regression problems. It will gradually be extended to other problems related to the nature of the response variable: counting, multivariate response, etc.
+- Currently **e2tree** works only for classification and regression problems. It will gradually be extended to handle other types of response variables, such as count data, multivariate responses, and more.
 
 
 ## Example 1: IRIS dataset
