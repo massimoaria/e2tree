@@ -1,6 +1,7 @@
 # e2tree 0.1.3
 
 - Added support for 'ranger' models
+- Several improvements in e2tree plots
 
 # e2tree 0.1.2
 

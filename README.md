@@ -17,7 +17,7 @@ status](https://www.r-pkg.org/badges/version/e2tree)](https://CRAN.R-project.org
 <img src="man/figures/e2tree_logo.png" width="400"  />
 </p>
 
-The Explainable Ensemble Trees (e2tree) key idea consists of the
+The **Explainable Ensemble Trees** (**e2tree**) key idea consists of the
 definition of an algorithm to represent every ensemble approach based on
 decision trees model using a single tree-like structure. The goal is to
 explain the results from the esemble algorithm while preserving its
@@ -34,7 +34,7 @@ be generalized to every ensemble approach based on decision trees.
 
 ## Setup
 
-You can install the developer version of e2tree from
+You can install the **developer version** of e2tree from
 [GitHub](https://github.com) with:
 
 ``` r
@@ -42,34 +42,36 @@ install.packages("remotes")
 remotes::install_github("massimoaria/e2tree")
 ```
 
-You can install the released version of e2tree from
+You can install the **released version** of e2tree from
 [CRAN](https://CRAN.R-project.org) with:
 
 ``` r
-install.packages("e2tree")
+if (!require("e2tree", quietly=TRUE)) install.packages("e2tree")
 ```
 
 ``` r
 require(e2tree)
 require(randomForest)
+require(ranger)
 require(dplyr)
 require(ggplot2)
 if (!(require(rsample, quietly=TRUE))){install.packages("rsample"); require(rsample, quietly=TRUE)} 
 options(dplyr.summarise.inform = FALSE)
 ```
 
-## Warnings
+## Warning
 
-The package is still under development and therefore, for the time
-being, there are the following limitations:
+This package is still under development and, for the time being, the
+following limitations apply:
 
-- Only ensembles trained with the randomForest package are supported.
-  Additional packages and approaches will be supported in the future;
+- Only ensembles trained with the **randomForest** and **ranger**
+  packages are currently supported. Support for additional packages and
+  approaches will be added in the future.
 
-- Currently e2tree works only in the case of classification and
-  regression problems. It will gradually be extended to other problems
-  related to the nature of the response variable: counting, multivariate
-  response, etc.
+- Currently **e2tree** works only for classification and regression
+  problems. It will gradually be extended to handle other types of
+  response variables, such as count data, multivariate responses, and
+  more.
 
 ## Example 1: IRIS dataset
 
@@ -108,8 +110,12 @@ response_validation <- validation[,5]
 Train an Random Forest model with 1000 weak learners
 
 ``` r
-# Perform training:
-ensemble = randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
+# Perform training with "ranger" or "randomForest" package:
+## RF with "ranger" package
+ensemble <- ranger(Species ~ ., data = training, num.trees = 1000, importance = 'impurity')
+
+## RF with "randomForest" package
+#ensemble = randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
 ```
 
 Here, we create the dissimilarity matrix between observations through
@@ -165,23 +171,31 @@ pred <- ePredTree(tree, training[,-5], target="virginica")
 Comparison of predictions (training sample) of RF and e2tree
 
 ``` r
-table(pred$fit, ensemble$predicted)
+# "ranger" package
+table(pred$fit, ensemble$predictions)
 #>             
 #>              setosa versicolor virginica
 #>   setosa         33          0         0
-#>   versicolor      0         24         2
+#>   versicolor      0         23         3
 #>   virginica       0          1        30
+
+# "randomForest" package
+#table(pred$fit, ensemble$predicted)
 ```
 
 Comparison of predictions (training sample) of RF and correct response
 
 ``` r
-table(ensemble$predicted, response_training)
+# "ranger" package
+table(ensemble$predictions, response_training)
 #>             response_training
 #>              setosa versicolor virginica
 #>   setosa         33          0         0
-#>   versicolor      0         23         2
-#>   virginica       0          2        30
+#>   versicolor      0         22         2
+#>   virginica       0          3        30
+
+## "randomForest" package
+#table(ensemble$predicted, response_training)
 ```
 
 Comparison of predictions (training sample) of e2tree and correct
@@ -199,18 +213,13 @@ table(pred$fit,response_training)
 Variable Importance
 
 ``` r
-ensemble_imp <- ensemble$importance %>% as.data.frame %>% 
-  mutate(Variable = rownames(ensemble$importance),
-         RF_Var_Imp = round(MeanDecreaseAccuracy,2)) %>% 
-  select(Variable, RF_Var_Imp)
-
 V <- vimp(tree, training)
 V
 #> $vimp
 #> # A tibble: 2 × 9
 #>   Variable     MeanImpurityDecrease MeanAccuracyDecrease `ImpDec_ setosa`
 #>   <chr>                       <dbl>                <dbl>            <dbl>
-#> 1 Petal.Length                0.366             2.22e- 2            0.315
+#> 1 Petal.Length                0.365             2.22e- 2            0.317
 #> 2 Petal.Width                 0.214             1.41e-16           NA    
 #> # ℹ 5 more variables: `ImpDec_ versicolor` <dbl>, `ImpDec_ virginica` <dbl>,
 #> #   `AccDec_ setosa` <dbl>, `AccDec_ versicolor` <dbl>,
@@ -229,7 +238,7 @@ V
 Comparison with the validation sample
 
 ``` r
-ensemble.pred <- predict(ensemble, validation[,-5], proximity = TRUE)
+ensemble.pred <- predict(ensemble, validation[,-5])
 
 pred_val<- ePredTree(tree, validation[,-5], target="virginica")
 ```
@@ -237,32 +246,16 @@ pred_val<- ePredTree(tree, validation[,-5], target="virginica")
 Comparison of predictions (sample validation) of RF and e2tree
 
 ``` r
-table(pred_val$fit, ensemble.pred$predicted)
+## "ranger" package
+table(pred_val$fit, ensemble.pred$predictions)
 #>             
 #>              setosa versicolor virginica
 #>   setosa         17          0         0
 #>   versicolor      0         26         0
 #>   virginica       0          0        17
-```
 
-Comparison of predictions (validation sample) of RF and correct response
-
-``` r
-table(ensemble.pred$predicted, response_validation)
-#>             response_validation
-#>              setosa versicolor virginica
-#>   setosa         17          0         0
-#>   versicolor      0         24         2
-#>   virginica       0          1        16
-ensemble.prob <- predict(ensemble, validation[,-5], proximity = TRUE, type="prob")
-roc_ensemble<- roc(response_validation, ensemble.prob$predicted[,"virginica"], target="virginica")
-```
-
-<img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" />
-
-``` r
-roc_ensemble$auc
-#> [1] 0.9874563
+## "randomForest" package
+#table(pred_val$fit, ensemble.pred$predicted)
 ```
 
 Comparison of predictions (validation sample) of e2tree and correct
@@ -278,11 +271,11 @@ table(pred_val$fit, response_validation)
 roc_res <- roc(response_validation, pred_val$score, target="virginica")
 ```
 
-<img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" />
 
 ``` r
 roc_res$auc
-#> [1] 0.9325268
+#> [1] 0.9324973
 ```
 
 To evaluate how well our tree captures the structure of the RF and
@@ -309,10 +302,10 @@ obtained under random reordering.
 eComparison(training, tree, D, graph = TRUE)
 ```
 
-<img src="man/figures/README-unnamed-chunk-20-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-3.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" width="100%" />
 
     #> $z.stat
-    #> [1] 1043.696
+    #> [1] 1046.257
     #> 
     #> $p
     #> [1] 0.001

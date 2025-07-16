@@ -336,7 +336,8 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   attr(yval2,"dimnames")[[2]] <- paste("V",seq(ncol(yval2)),sep="")
   info$yval2 <- cbind(yval2, nodeprob)
   }
-  ylevels <- as.character(unique(response))
+  #ylevels <- as.character(unique(response))
+  ylevels <- levels(mf[[1]]) #### I need this to preserve the orginal attributes
   row.names(info) <- info$node
   info <- info[as.character(N),]
 
