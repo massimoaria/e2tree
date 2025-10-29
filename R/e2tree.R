@@ -39,24 +39,24 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #'
 #' # Perform training:
 #' ## "randomForest" package
-#' ensemble <- randomForest::randomForest(Species ~ ., data=training, 
+#' ensemble <- randomForest::randomForest(Species ~ ., data=training,
 #' importance=TRUE, proximity=TRUE)
-#' 
+#'
 #' ## "ranger" package
-#' ensemble <- ranger::ranger(Species ~ ., data = iris, 
+#' ensemble <- ranger::ranger(Species ~ ., data = iris,
 #' num.trees = 1000, importance = 'impurity')
-#' 
-#' D <- createDisMatrix(ensemble, data=training, label = "Species", 
+#'
+#' D <- createDisMatrix(ensemble, data=training, label = "Species",
 #'                               parallel = list(active=FALSE, no_cores = 1))
-#' 
+#'
 #' setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 #' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 #'
-#' 
-#' 
+#'
+#'
 #' ## Regression
 #' data("mtcars")
-#' 
+#'
 #' # Create training and validation set:
 #' smp_size <- floor(0.75 * nrow(mtcars))
 #' train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
@@ -64,75 +64,75 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' validation <- mtcars[-train_ind, ]
 #' response_training <- training[,1]
 #' response_validation <- validation[,1]
-#' 
+#'
 #' # Perform training
 #' ## "randomForest" package
-#' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+#' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000,
 #' importance=TRUE, proximity=TRUE)
-#' 
+#'
 #' ## "ranger" package
-#' ensemble <- ranger::ranger(formula = mpg ~ ., data = training, 
+#' ensemble <- ranger::ranger(formula = mpg ~ ., data = training,
 #' num.trees = 1000, importance = "permutation")
-#' 
-#' D = createDisMatrix(ensemble, data=training, label = "mpg", 
-#'                                parallel = list(active=FALSE, no_cores = 1))  
-#' 
+#'
+#' D = createDisMatrix(ensemble, data=training, label = "mpg",
+#'                                parallel = list(active=FALSE, no_cores = 1))
+#'
 #' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 #' tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
-#' 
+#'
 #' }
 #'
 #' @export
 
 
 e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)){
-  
+
   # === Input Validation ===
-  
+
   # Validate formula
   if (!inherits(formula, "formula")) {
     stop("Error: 'formula' must be a valid formula object.")
   }
-  
+
   # Validate data
   if (!is.data.frame(data) || nrow(data) == 0) {
     stop("Error: 'data' must be a non-empty data frame.")
   }
-  
+
   # Validate D (dissimilarity matrix)
   if (!is.matrix(D) || nrow(D) != ncol(D)) {
     stop("Error: 'D' must be a square dissimilarity matrix.")
   }
-  
+
   # Validate ensemble
   if (inherits(ensemble, "randomForest")) {
     type <- ensemble$type
     if (!type %in% c("classification", "regression")) {
       stop("Error: 'type' in ensemble object must be 'classification' or 'regression'.")
     }
-    
+
   } else if (inherits(ensemble, "ranger")) {
     type <- ensemble$treetype
     if (!type %in% c("Classification", "Regression")) {
       stop("Error: 'type' in ensemble object must be 'classification' or 'regression'.")
     }
-    
+
   } else {
     stop("Error: 'ensemble' must be a trained 'randomForest' or 'ranger' model.")
   }
-  
+
   # Validate setting
   if (!is.list(setting) || !all(c("impTotal", "maxDec", "n", "level") %in% names(setting))) {
     stop("Error: 'setting' must be a list with keys: 'impTotal', 'maxDec', 'n', and 'level'.")
   }
-  
+
   # Ensure all setting values are numeric and positive
   if (!all(sapply(setting, is.numeric)) || any(unlist(setting) <= 0)) {
     stop("Error: All values in 'setting' must be positive numeric values.")
   }
-  
+
   # === Proceed with the function ===
-  
+
   row.names(data) = NULL
   Call <- match.call()
   mf <- match.call(expand.dots = FALSE)
@@ -144,25 +144,26 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   Terms <- attributes(mf)$terms
 
   response <- mf[,1]
-  X <- mf[,-1]
-  
+  X <- ordered2factor(mf[,-1]) # Convert ordered factors to regular factors (to change!!!)
+
   # create type object
   if (inherits(ensemble, "randomForest")) {
     type <- ensemble$type  # "classification" or "regression"
-    
+
   } else if (inherits(ensemble, "ranger")) {
     # Convert "Classification" or "Regression" in lower case
     type <- tolower(ensemble$treetype)
   }
-  
-  
+
+
   setting$tMax <- 1
 
   for (i in 1:setting$level) setting$tMax <- setting$tMax*2+1
 
   ## identify qualitative variable and the number of categories:
   # Determine classes of all variables in X
-  var_classes <- unlist(lapply(X,class))
+  #var_classes <- unlist(lapply(X,class))
+  var_classes <- get_classes(X)
   # Identify indices of factors and character variables
   ind <- which(var_classes %in% c("factor","character"))
   # Calculate the number of unique categories for each factor and character variable
@@ -345,7 +346,7 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   if (type == "regression"){
     info$Wt <- NULL
     maxvar <- diff(range(response))^2L / 9L
-    size <- length(response) 
+    size <- length(response)
     for (i in info$node){
       indice <- unlist(eval(parse(text=info$obs[info$node==i])))
       v <- 1-(variance(response[indice])/(maxvar*length(indice)/size))
@@ -353,8 +354,8 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
     }
     info <- info %>% relocate(Wt, .after=prob)
   }
-  
-  
+
+
   object <- csplit_str(info,X,ncat, call=Call, terms=Terms, control=setting, ylevels=ylevels)
 
   #object$varimp <- vimp(object, data = data)
@@ -366,12 +367,6 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
 
   return(object)
 }
-
-
-
-
-
-
 
 
 paths <- function(info,t){
@@ -391,12 +386,20 @@ paths <- function(info,t){
 ### creation objects for rpart.plot ----
 csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
 
-  var_lev <- attribute <- list()
+  var_lev <- var_ord <- attribute <- list()
   for (i in names(ncat)){
     var_lev[[i]] <- seq(ncat[i])
     names(var_lev[[i]]) <- unique(X[,i])
     attribute[[i]] <- as.character(unique(X[,i]))
   }
+
+  # ordVar <- get_classes(X)
+  # ordVar <- names(ordVar[ordVar=="ordered"])
+  # for (i in names(ordVar)){
+  #   var_ord[[i]] <- seq(length(levels(X[[i]])))
+  #   names(var_ord[[i]]) <- unique(levels(X[[i]]))
+  #   attribute[[i]] <- as.character(levels(X[[i]]))
+  # }
 
   #qualitative splits
   splits <- info %>%
@@ -406,8 +409,9 @@ csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
   #splits <- info[!is.na(info$variable), c("n","ncat","variable","decImp", "splitLabel")]
   # index for numerical predictors
   if(nrow(info)>1){
-  varnumerics <- strsplit(splits$splitLabel[splits$ncat==-1],"<=")
-  splits$index[splits$ncat==-1] <- unlist(lapply(varnumerics, function(x) x[2]))}
+    varnumerics <- strsplit(splits$splitLabel[splits$ncat==-1],"<=")
+    splits$index[splits$ncat==-1] <- unlist(lapply(varnumerics, function(x) x[2]))
+  }
 
   #splits$index <- suppressWarnings(as.numeric(as.numeric(gsub("[^[:digit:]., ]", "",splits$splitLabel))))
   splits$index[splits$ncat!=-1] <- seq(sum(splits$ncat!=-1))
@@ -475,4 +479,41 @@ Wtest = function(Y, X, type, p.value=0.05){
           "regression" = {resp <- wilcox.test(Y ~ X)$p.value <= 0.05}
   )
   return(resp)
+}
+
+# get_classes <- function(df) {
+#   dfClasses <- data.frame(
+#     column = names(df),
+#     class = sapply(df, function(x) paste(class(x), collapse = ", "))
+#   ) %>%
+#     mutate(type = class,
+#            type = ifelse(sapply(df, is.factor), "factor",
+#                          ifelse(sapply(df, is.character), "character", type))) %>%
+#     select(column, type)
+#   classes <- dfClasses$type
+#   names(classes) <- dfClasses$column
+#   return(classes)
+# }
+
+get_classes <- function(df) {
+  dfClasses <- data.frame(
+    column = names(df),
+    class = sapply(df, function(x) paste(class(x), collapse = ", "))
+  ) %>%
+    mutate(type = class,
+           type = ifelse(regexpr("ordered",type)>-1, "ordered",
+                         ifelse(sapply(df, is.character), "character", type))) %>%
+    select(column, type)
+  classes <- dfClasses$type
+  names(classes) <- dfClasses$column
+  return(classes)
+}
+
+ordered2factor <- function(X){
+  varClass <- get_classes(X)
+  varClass <- names(varClass[varClass=="ordered"])
+  for (i in varClass){
+    class(X[[i]]) <- "factor"
+  }
+  return(X)
 }
