@@ -7,6 +7,13 @@ split <- function(X){
 
   S <- lapply(X,function(x){
     type <- class(x)
+    if (length(type)>1){
+      if ("ordered" %in% type){
+        type <- "ordered"  # if ordered is present, use it
+      } else {
+        type <- type[1]  # otherwise take the first class
+      }
+    }
 
     if (type %in% c("character","factor")){
       #print(colnames(x))
