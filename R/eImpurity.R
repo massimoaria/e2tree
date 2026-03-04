@@ -1,99 +1,43 @@
-# ============================================================================
-# eImpurity 
-# ============================================================================
-
-eImpurity <- function(y, index, S){
-  # Calculate impurity for all possible splits at a given node
-  # Optimized version eliminates future_apply to avoid memory transfer issues
-  #
-  # Args:
-  #   y: Full dissimilarity matrix (n_obs x n_obs)
-  #   index: Vector of indices for observations in current node
-  #   S: Split matrix (n_obs x n_splits), binary indicators for each split
-  #
-  # Returns:
-  #   Named vector of impurity values for each split
-  
+eImpurity <- function(y, index, S) {
+  S_sub <- S[index, , drop = FALSE]
   n <- length(index)
-  n_splits <- ncol(S)
-  
-  # Pre-calculate column sums for filtering
-  tab <- colSums(S[index, , drop = FALSE])
-  
-  # Identify invalid splits (don't divide the node properly)
-  ind_invalid <- !(tab > 1 & tab < (n - 1))
-  
-  # Initialize impurity vector
-  imp <- numeric(n_splits)
-  
-  # ✅ CRITICAL: Preserve column names from S
-  names(imp) <- colnames(S)
-  
-  # Calculate impurity for each split
-  # Sequential loop is faster than parallel for this operation
-  # because it avoids massive data transfer overhead
-  for (j in 1:n_splits) {
-    if (ind_invalid[j]) {
-      imp[j] <- Inf
-    } else {
-      s <- S[index, j]
-      imp[j] <- dissimilarity(y, index, s)
-    }
+
+  # Pre-filter: remove splits where one group has < 2 obs
+  tab <- colSums(S_sub)
+  valid <- which(tab >= 2 & tab <= (n - 2))
+
+  if (length(valid) == 0) {
+    imp <- rep(Inf, ncol(S_sub))
+    names(imp) <- colnames(S_sub)
+    return(imp)
   }
-  
+
+  # Extract the dissimilarity sub-matrix for this node
+  y_sub <- y[index, index]
+
+  # Use C++ for fast impurity computation on valid splits only
+  S_valid <- matrix(as.integer(as.matrix(S_sub[, valid, drop = FALSE])),
+                    nrow = n, ncol = length(valid))
+  imp_valid <- compute_impurity_cpp(y_sub, S_valid)
+
+  # Build full result vector
+  imp <- rep(Inf, ncol(S_sub))
+  names(imp) <- colnames(S_sub)
+  imp[valid] <- imp_valid
+
   return(imp)
 }
 
 
-# ============================================================================
-# OPTIMIZED dissimilarity
-# ============================================================================
-
-dissimilarity <- function(y, index, s){
-  # Calculate weighted dissimilarity for a given split
-  # Optimized to use direct indexing instead of creating submatrices
-  #
-  # Args:
-  #   y: Full dissimilarity matrix (not subset)
-  #   index: Vector of indices for observations in current node
-  #   s: Split vector (0=right, 1=left) for observations in index
-  #
-  # Returns:
-  #   Weighted dissimilarity value for this split
-  
-  n <- length(index)
-  
-  # Identify observations going right (0) and left (1)
-  idx_R_local <- which(s == 0)
-  idx_L_local <- which(s == 1)
-  
-  nR <- length(idx_R_local)
-  nL <- length(idx_L_local)
-  
-  # Convert to global indices
-  idx_R <- index[idx_R_local]
-  idx_L <- index[idx_L_local]
-  
-  # Calculate weighted dissimilarity for right child
-  if (nR > 1) {
-    sum_R <- sum(y[idx_R, idx_R])
-    sR <- sum_R / (n * (nR - 1))
-  } else {
-    sR <- 0
-  }
-  
-  # Calculate weighted dissimilarity for left child
-  if (nL > 1) {
-    sum_L <- sum(y[idx_L, idx_L])
-    sL <- sum_L / (n * (nL - 1))
-  } else {
-    sL <- 0
-  }
-  
-  # Return pooled impurity
-  imp <- sR + sL
-  
-  return(imp)
+############
+# Kept as fallback for debugging; no longer used in main loop
+dissimilarity <- function(y, s) {
+  n <- dim(y)[1]
+  nR <- sum(s == 0)
+  nL <- n - nR
+  dR <- y[s == 0, s == 0]
+  dL <- y[s == 1, s == 1]
+  sR <- sum(dR) / (n * (nR - 1))
+  sL <- sum(dL) / (n * (nL - 1))
+  return(sR + sL)
 }
-
-
