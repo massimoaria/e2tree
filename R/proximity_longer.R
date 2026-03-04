@@ -31,7 +31,7 @@ idImpurity2 <- function(y,index,S){
     #items <- c(n0*(n0-1),n1*(n1-1))/2
     # Tasso ben classificati in tutti i nodi terminali dell'i-esimo albero
     R <- cbind(D,s=s) %>%
-      filter(.data$s>-1) %>%
+      dplyr::filter(.data$s>-1) %>%
       group_by(s) %>%
       summarize(m=mean(.data$value))
     imp[i] <- sum(R$m*c(n-sum(s2),sum(s2)))/n

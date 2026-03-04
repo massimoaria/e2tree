@@ -131,10 +131,12 @@ vimp <- function(fit, data, type = "classification") {
     names(response) <- row.names(data)
     for (i in t){
       obs <- row.names(data)[unlist(tree[i,"obs"])]
-      path <- tree[i,"splitLabelSur"]
-      x <- data[obs,]
-      indL <- obs[eval(parse(text=paste("x$",path)))]
-      indR <- setdiff(obs,indL)
+      split_label <- tree[i,"splitLabelSur"]
+      x <- data[obs, , drop = FALSE]
+      ## Evaluate split without eval/parse
+      goes_left <- evaluate_vimp_split(x, split_label)
+      indL <- obs[goes_left]
+      indR <- obs[!goes_left]
       probL <- as.numeric(moda(response[indL])[2])
       probR <- as.numeric(moda(response[indR])[2])
       tree[i,"probChildrenSur"] <- (probL*length(indL)/tree[i,"n"]) + (probR*length(indR)/tree[i,"n"])
@@ -143,34 +145,34 @@ vimp <- function(fit, data, type = "classification") {
     
     tree[t,"decProb"] <- tree[t,"probChildren"]-tree[t,"probChildrenSur"]
     
-    vimp_resp <- tree %>%
-      mutate(Nimp = decImp*n/n[1]) %>%
-      group_by(variable,pred) %>%
-      summarize(vimp = sum(Nimp), .groups = "drop") %>%
-      drop_na(variable) %>%
+    ## Compute Nimp and Pimp once, then group_by(variable, pred) once
+    tree_aug <- tree %>%
+      mutate(Nimp = decImp * n / n[1],
+             Pimp = decProb * n / n[1])
+
+    ## Single grouped summarize for both metrics by (variable, pred)
+    by_var_pred <- tree_aug %>%
+      group_by(variable, pred) %>%
+      summarize(vimp = sum(Nimp, na.rm = TRUE),
+                pimp = sum(Pimp, na.rm = TRUE), .groups = "drop") %>%
+      drop_na(variable)
+
+    vimp_resp <- by_var_pred %>%
+      select(variable, pred, vimp) %>%
       pivot_wider(names_from = pred, values_from = vimp)
-    
-    names(vimp_resp)[-1] <- paste("ImpDec_",names(vimp_resp)[-1])
-    
-    vimp_prob <- tree %>%
-      mutate(Pimp = decProb*n/n[1]) %>%
-      group_by(variable,pred) %>%
-      summarize(pimp = sum(Pimp), .groups = "drop") %>%
-      drop_na(variable) %>%
+    names(vimp_resp)[-1] <- paste("ImpDec_", names(vimp_resp)[-1])
+
+    vimp_prob <- by_var_pred %>%
+      select(variable, pred, pimp) %>%
       pivot_wider(names_from = pred, values_from = pimp)
-    
-    names(vimp_prob)[-1] <- paste("AccDec_",names(vimp_prob)[-1])
-    
-    vimp <- tree %>%
-      mutate(Nimp = decImp*n/n[1],
-             Pimp = decProb*n/n[1]) %>%
+    names(vimp_prob)[-1] <- paste("AccDec_", names(vimp_prob)[-1])
+
+    ## Overall vimp: aggregate from by_var_pred (no re-scan of tree)
+    vimp <- by_var_pred %>%
       group_by(variable) %>%
-      summarize(vimp = sum(Nimp, na.rm=TRUE),
-                pimp = sum(Pimp, na.rm=TRUE), .groups = "drop") %>%
-      drop_na(variable) %>%
-      # mutate(vimpNorm = .data$vimp/sum(.data$vimp)*100,
-      #        pimpNorm = .data$pimp/sum(.data$pimp)*100) %>%
-      arrange(desc(vimp), by_group=FALSE) %>%
+      summarize(vimp = sum(vimp, na.rm = TRUE),
+                pimp = sum(pimp, na.rm = TRUE), .groups = "drop") %>%
+      arrange(desc(vimp), by_group = FALSE) %>%
       left_join(vimp_resp, by = "variable") %>%
       left_join(vimp_prob, by = "variable")
     
@@ -229,5 +231,23 @@ vimp <- function(fit, data, type = "classification") {
       theme_minimal()
     
     return(list(vimp = vimp_table, g_imp = pImp))
+  }
+}
+
+## Helper: evaluate surrogate split without eval/parse
+evaluate_vimp_split <- function(x, split_label) {
+  if (grepl(" <= ?", split_label)) {
+    parts <- regmatches(split_label, regexec("^(.+?) <=(.+)$", split_label))[[1]]
+    var_name <- trimws(parts[2])
+    threshold <- as.numeric(trimws(parts[3]))
+    return(x[[var_name]] <= threshold)
+  } else if (grepl(" %in% ", split_label)) {
+    parts <- regmatches(split_label, regexec("^(.+?) %in% (.+)$", split_label))[[1]]
+    var_name <- trimws(parts[2])
+    cats <- eval(parse(text = parts[3]))
+    return(as.character(x[[var_name]]) %in% cats)
+  } else {
+    warning(paste("Unknown split format:", split_label))
+    return(rep(TRUE, nrow(x)))
   }
 }

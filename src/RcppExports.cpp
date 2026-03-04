@@ -10,6 +10,33 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// compute_impurity_cpp
+NumericVector compute_impurity_cpp(NumericMatrix y, IntegerMatrix S);
+RcppExport SEXP _e2tree_compute_impurity_cpp(SEXP ySEXP, SEXP SSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type y(ySEXP);
+    Rcpp::traits::input_parameter< IntegerMatrix >::type S(SSEXP);
+    rcpp_result_gen = Rcpp::wrap(compute_impurity_cpp(y, S));
+    return rcpp_result_gen;
+END_RCPP
+}
+// compute_cooccurrences_sparse_cpp
+List compute_cooccurrences_sparse_cpp(std::string type, DataFrame obs, int tree_index, int n_total, double maxvar);
+RcppExport SEXP _e2tree_compute_cooccurrences_sparse_cpp(SEXP typeSEXP, SEXP obsSEXP, SEXP tree_indexSEXP, SEXP n_totalSEXP, SEXP maxvarSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type type(typeSEXP);
+    Rcpp::traits::input_parameter< DataFrame >::type obs(obsSEXP);
+    Rcpp::traits::input_parameter< int >::type tree_index(tree_indexSEXP);
+    Rcpp::traits::input_parameter< int >::type n_total(n_totalSEXP);
+    Rcpp::traits::input_parameter< double >::type maxvar(maxvarSEXP);
+    rcpp_result_gen = Rcpp::wrap(compute_cooccurrences_sparse_cpp(type, obs, tree_index, n_total, maxvar));
+    return rcpp_result_gen;
+END_RCPP
+}
 // compute_cooccurrences_cpp
 NumericMatrix compute_cooccurrences_cpp(std::string type, DataFrame obs, NumericMatrix w, int tree_index, double maxvar);
 RcppExport SEXP _e2tree_compute_cooccurrences_cpp(SEXP typeSEXP, SEXP obsSEXP, SEXP wSEXP, SEXP tree_indexSEXP, SEXP maxvarSEXP) {
@@ -25,9 +52,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// compute_all_cooccurrences_cpp
+NumericMatrix compute_all_cooccurrences_cpp(std::string type, DataFrame obs, int ntree, int n_cores, double maxvar);
+RcppExport SEXP _e2tree_compute_all_cooccurrences_cpp(SEXP typeSEXP, SEXP obsSEXP, SEXP ntreeSEXP, SEXP n_coresSEXP, SEXP maxvarSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type type(typeSEXP);
+    Rcpp::traits::input_parameter< DataFrame >::type obs(obsSEXP);
+    Rcpp::traits::input_parameter< int >::type ntree(ntreeSEXP);
+    Rcpp::traits::input_parameter< int >::type n_cores(n_coresSEXP);
+    Rcpp::traits::input_parameter< double >::type maxvar(maxvarSEXP);
+    rcpp_result_gen = Rcpp::wrap(compute_all_cooccurrences_cpp(type, obs, ntree, n_cores, maxvar));
+    return rcpp_result_gen;
+END_RCPP
+}
+// compute_dissimilarity_from_cooc_cpp
+NumericMatrix compute_dissimilarity_from_cooc_cpp(NumericMatrix a);
+RcppExport SEXP _e2tree_compute_dissimilarity_from_cooc_cpp(SEXP aSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type a(aSEXP);
+    rcpp_result_gen = Rcpp::wrap(compute_dissimilarity_from_cooc_cpp(a));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_e2tree_compute_impurity_cpp", (DL_FUNC) &_e2tree_compute_impurity_cpp, 2},
+    {"_e2tree_compute_cooccurrences_sparse_cpp", (DL_FUNC) &_e2tree_compute_cooccurrences_sparse_cpp, 5},
     {"_e2tree_compute_cooccurrences_cpp", (DL_FUNC) &_e2tree_compute_cooccurrences_cpp, 5},
+    {"_e2tree_compute_all_cooccurrences_cpp", (DL_FUNC) &_e2tree_compute_all_cooccurrences_cpp, 5},
+    {"_e2tree_compute_dissimilarity_from_cooc_cpp", (DL_FUNC) &_e2tree_compute_dissimilarity_from_cooc_cpp, 1},
     {NULL, NULL, 0}
 };
 

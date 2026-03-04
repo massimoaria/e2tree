@@ -176,7 +176,8 @@ createDisMatrix <- function(
           ensemble,
           data,
           type = "terminalNodes",
-          num.threads = 1 # not to interfere with parallelization
+          num.threads = 1, # not to interfere with parallelization
+          verbose = verbose
         ) %>%
         {
           .$predictions

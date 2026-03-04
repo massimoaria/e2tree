@@ -64,9 +64,11 @@ return(results)
 
 
 auc_probability <- function(labels, scores, N=1e7){
+  # Exact AUC via Wilcoxon-Mann-Whitney statistic — O(n log n), deterministic
   labels <- as.logical(labels)
-  pos <- sample(scores[labels], N, replace=TRUE)
-  neg <- sample(scores[!labels], N, replace=TRUE)
-  # sum( (1 + sign(pos - neg))/2)/N # does the same thing
-  (sum(pos > neg) + sum(pos == neg)/2) / N # give partial credit for ties
+  n1 <- sum(labels)
+  n0 <- sum(!labels)
+  if (n1 == 0 || n0 == 0) return(NA_real_)
+  r <- rank(scores, ties.method = "average")
+  (sum(r[labels]) - n1 * (n1 + 1) / 2) / (n1 * n0)
 }

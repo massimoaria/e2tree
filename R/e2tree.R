@@ -1,4 +1,5 @@
-utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "ID", "index", "Wt", "prob")) # to avoid CRAN check errors for tidyverse programming
+utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", 
+                         "ID", "index", "Wt", "prob", "type", "column")) # to avoid CRAN check errors for tidyverse programming
 
 #' Explainable Ensemble Tree
 #'
@@ -86,54 +87,48 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 
 
 e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)){
-
+  
   # === Input Validation ===
-
-  # Validate formula
+  
   if (!inherits(formula, "formula")) {
     stop("Error: 'formula' must be a valid formula object.")
   }
-
-  # Validate data
+  
   if (!is.data.frame(data) || nrow(data) == 0) {
     stop("Error: 'data' must be a non-empty data frame.")
   }
-
-  # Validate D (dissimilarity matrix)
+  
   if (!is.matrix(D) || nrow(D) != ncol(D)) {
     stop("Error: 'D' must be a square dissimilarity matrix.")
   }
-
-  # Validate ensemble
+  
   if (inherits(ensemble, "randomForest")) {
     type <- ensemble$type
     if (!type %in% c("classification", "regression")) {
       stop("Error: 'type' in ensemble object must be 'classification' or 'regression'.")
     }
-
+    
   } else if (inherits(ensemble, "ranger")) {
     type <- ensemble$treetype
     if (!type %in% c("Classification", "Regression")) {
       stop("Error: 'type' in ensemble object must be 'classification' or 'regression'.")
     }
-
+    
   } else {
     stop("Error: 'ensemble' must be a trained 'randomForest' or 'ranger' model.")
   }
-
-  # Validate setting
+  
   if (!is.list(setting) || !all(c("impTotal", "maxDec", "n", "level") %in% names(setting))) {
     stop("Error: 'setting' must be a list with keys: 'impTotal', 'maxDec', 'n', and 'level'.")
   }
-
-  # Ensure all setting values are numeric and positive
+  
   if (!all(sapply(setting, is.numeric)) || any(unlist(setting) <= 0)) {
     stop("Error: All values in 'setting' must be positive numeric values.")
   }
-
+  
   # === Proceed with the function ===
-
-  row.names(data) = NULL
+  
+  row.names(data) <- NULL
   Call <- match.call()
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data"), names(mf), 0L)
@@ -142,31 +137,23 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   mf[[1L]] <- quote(stats::model.frame)
   mf <- eval(mf, parent.frame())
   Terms <- attributes(mf)$terms
-
+  
   response <- mf[,1]
-  X <- ordered2factor(mf[,-1]) # Convert ordered factors to regular factors (to change!!!)
-
-  # create type object
+  X <- ordered2factor(mf[,-1])
+  
+  # Create type object
   if (inherits(ensemble, "randomForest")) {
-    type <- ensemble$type  # "classification" or "regression"
-
+    type <- ensemble$type
   } else if (inherits(ensemble, "ranger")) {
-    # Convert "Classification" or "Regression" in lower case
     type <- tolower(ensemble$treetype)
   }
-
-
+  
   setting$tMax <- 1
-
   for (i in 1:setting$level) setting$tMax <- setting$tMax*2+1
-
-  ## identify qualitative variable and the number of categories:
-  # Determine classes of all variables in X
-  #var_classes <- unlist(lapply(X,class))
+  
+  ## Identify qualitative variables and number of categories
   var_classes <- get_classes(X)
-  # Identify indices of factors and character variables
   ind <- which(var_classes %in% c("factor","character"))
-  # Calculate the number of unique categories for each factor and character variable
   ncat <- NULL
   if (length(ind)>0){
     for (i in 1:length(ind)){
@@ -174,123 +161,134 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
     }
     names(ncat) <- names(X)[ind]
   }
-  #ncat <- (sapply(X[,ind], function(x) length(unique(x))))
-  #ncat <- (apply(X[,ind],2, function(x) length(unique(x))))
-  # Update var_classes with the number of categories for character and factor variables
-  var_classes[names(ncat)] = ncat
-  # Set other variable types to -1
-  var_classes[!names(var_classes) %in% names(ncat)] = -1
-  # Convert var_classes values to numeric
+  var_classes[names(ncat)] <- ncat
+  var_classes[!names(var_classes) %in% names(ncat)] <- -1
   var_classes <- as.numeric(var_classes)
-  # Ensure the names of var_classes match those of X
   names(var_classes) <- names(X)
-
-  ## Generate the split matrix S from the original predictor matrix X
+  
+  ## Generate the split matrix S
   res <- split(X)
   S <- res$S
   l <- res$lab
   rm(res)
-
-  # Initilize node vector
-  nodes <- rep(1,nrow(S))
-
-  # list of no-terminal nodes
-  nterm <- 1
+  
+  # Initialize node vector
+  nodes <- rep(1, nrow(S))
+  
+  # ✅ OPTIMIZATION 1: Pre-allocate vectors to avoid dynamic growth
+  # Instead of: N <- c(N, t) which copies everything each iteration
+  N <- integer(setting$tMax)
+  N_count <- 0
+  
+  # List of non-terminal nodes - also pre-allocated
+  nterm <- integer(setting$tMax)
+  nterm_count <- 1
+  nterm[1] <- 1
+  
   m <- unique(response)
-
+  
+  # Create info dataframe structure
   if (type == "classification") {
-  m_label <- paste("V", seq(1,length(m)*2), sep="")
-  labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur","variable" ,"split", "splitLabel", "variableSur", "splitLabelSur","parent","children","terminal", "obs", "path", "ncat",m_label)
-  info <- data.frame(matrix(NA,setting$tMax,length(labels)))
-  names(info) <- labels
-  indv <- (ncol(info)-length(m_label)+1):ncol(info)
-  } else {
-    labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur","variable" ,"split", "splitLabel", "variableSur", "splitLabelSur","parent","children","terminal", "obs", "path", "ncat")
-    info <- data.frame(matrix(NA,setting$tMax,length(labels)))
+    m_label <- paste("V", seq(1, length(m)*2), sep="")
+    labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur",
+                "variable" ,"split", "splitLabel", "variableSur", "splitLabelSur",
+                "parent","children","terminal", "obs", "path", "ncat", m_label)
+    info <- data.frame(matrix(NA, setting$tMax, length(labels)))
     names(info) <- labels
-    }
-
-  N <- NULL
-
-  ### variance in the root node
-  vart1 = ifelse(type=="regression", variance(response), NA)
-
-  while(length(nterm)>0){
-    t <- tail(nterm,1)
-    #print(t)
-    N <- c(N,t)
+    indv <- (ncol(info)-length(m_label)+1):ncol(info)
+  } else {
+    labels <- c("node","n", "pred", "prob", "impTotal", "impChildren","decImp","decImpSur",
+                "variable" ,"split", "splitLabel", "variableSur", "splitLabelSur",
+                "parent","children","terminal", "obs", "path", "ncat")
+    info <- data.frame(matrix(NA, setting$tMax, length(labels)))
+    names(info) <- labels
+  }
+  
+  # ✅ OPTIMIZATION 2: Store obs as separate list structure
+  # Avoids issues with list columns and eliminates need for eval(parse())
+  obs_list <- vector("list", setting$tMax)
+  
+  # ✅ OPTIMIZATION 3: Pre-compute paths incrementally
+  path_list <- character(setting$tMax)
+  path_list[1] <- ""  # Root has empty path
+  
+  ### Variance in the root node
+  vart1 <- ifelse(type=="regression", variance(response), NA)
+  
+  # === Main Loop ===
+  while(nterm_count > 0){
+    # Get last non-terminal node
+    t <- nterm[nterm_count]
+    
+    # Add to processed nodes list
+    N_count <- N_count + 1
+    N[N_count] <- t
+    
+    # Get observations in this node
     index <- which(nodes == t)
-
-    ### check Stopping Rules----
-    results <- eStoppingRules(D,index, t, setting, response, ensemble, vart1)
-
+    
+    ### Check Stopping Rules
+    results <- eStoppingRules(D, index, t, setting, response, ensemble, vart1)
+    
     ### Compute the response in the node
     switch(type,
            classification={
              res <- moda(response[index])
            },
            regression={
-             res <- c(mean(response[index]), sum((response[index] - ensemble$predicted[index])^2)) # mean and MSE
+             res <- c(mean(response[index]), sum((response[index] - ensemble$predicted[index])^2))
            })
-    ###
-
-    info$pred[t] <- res[1]   # Mean for regression
-    info$prob[t] <- as.numeric(res[2])  # MSE for regression
+    
+    info$pred[t] <- res[1]
+    info$prob[t] <- as.numeric(res[2])
     info$node[t] <- t
     info$parent[t] <- floor(t/2)
     info$n[t] <- length(index)
     info$impTotal[t] <- results$impTotal
-
-    ##### statistics
+    
+    ##### Statistics for classification
     if (type == "classification") {
-    yval <- data.frame(Y=response[index]) %>%
-      mutate(Y=factor(Y, levels=levels(m))) %>%
-      group_by(Y) %>%
-      summarize(n=n(),
-                p=n/length(response[index])) %>%
-      complete(Y, fill = list(n = 0, p = 0)) %>%
-      select(n,p) %>%
-      as.matrix() %>%
-      c()
-
-    info[t,indv] <- yval
+      yval <- data.frame(Y=response[index]) %>%
+        mutate(Y=factor(Y, levels=levels(m))) %>%
+        group_by(Y) %>%
+        summarize(n=n(),
+                  p=n/length(response[index])) %>%
+        complete(Y, fill = list(n = 0, p = 0)) %>%
+        select(n,p) %>%
+        as.matrix() %>%
+        c()
+      
+      info[t,indv] <- yval
     }
-
+    
     ###
-
+    
     if (isTRUE(results$sRule)){
-      #list(imp=NA,decImp=NA, split=NA, splitLabel=NA, terminal=TRUE, impTotal=results$impTotal, obs=index, path=NA)
+      # Terminal node
       info$terminal[t] <- TRUE
-      #info$impTotal[t] <- results$impTotal
-      info$obs[t] <- list(index)
-      info$path[t] <- paths(info,t)
-
-      #### add prediction
-      #info[[t]]$pred <- prediction(Y[index])
-      ####
-
-    } else{
-      imp<- eImpurity(D,index,S)
+      obs_list[[t]] <- index  # ✅ Store directly in list
+      path_list[t] <- paths_optimized(info, path_list, t)  # ✅ Optimized version
+      
+    } else {
+      # Find best split using optimized eImpurity
+      imp <- eImpurity(D, index, S)
       s <- which.min(imp)
       v <- gsub(" <=.*| %in%.*","",names(s))
       s2 <- which.min(imp[!(l %in% v)])
-
-      # max decrease of impurity
-      decImp <- results$impTotal-imp[s]
-      decImpSur <- results$impTotal-imp[s2]
-
-      #check for max impurity stopping rule
-      if (decImp<=setting$maxDec){
-        #info[[t]] <- list(imp=NA,decImp=NA, split=NA, splitLabel=NA, terminal=TRUE, parent= floor(t/2), children=NA, impTotal=results$impTotal, obs=index, path=NA)
-        #info$parent[t] <- floor(t/2)
+      
+      # Max decrease of impurity
+      decImp <- results$impTotal - imp[s]
+      decImpSur <- results$impTotal - imp[s2]
+      
+      # Check for max impurity stopping rule
+      if (decImp <= setting$maxDec){
         info$terminal[t] <- TRUE
-        #info$impTotal[t] <- results$impTotal
-        info$obs[t] <- list(index)
-        info$path[t] <- paths(info,t)
+        obs_list[[t]] <- index
+        path_list[t] <- paths_optimized(info, path_list, t)
+        
       } else if (suppressWarnings(Wtest(Y=response[index], X=S[index,s], p.value=0.05, type = type))){
-        # Stopping Rule with Mann-Whitney for regression case
-        # if it is regression, check that the hypothesis that the two distributions in tL and tR are equal is rejected
-
+        # Split the node
+        
         info$impChildren[t] <- as.numeric(imp[s])
         info$decImp[t] <- as.numeric(decImp)
         info$decImpSur[t] <- as.numeric(decImpSur)
@@ -299,203 +297,222 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
         info$splitLabelSur[t] <- names(s2)
         info$terminal[t] <- FALSE
         info$parent[t] <- floor(t/2)
-        info$children[t] <- list(c(t*2,t*2+1))
+        info$children[t] <- list(c(t*2, t*2+1))
         info$impTotal[t] <- results$impTotal
-        info$obs[t] <- list(index)
-        info$path[t] <- paths(info,t)
+        obs_list[[t]] <- index  # ✅ Store directly
+        path_list[t] <- paths_optimized(info, path_list, t)  # ✅ Optimized
         info$variable[t] <- gsub(" <=.*| %in%.*","",info$splitLabel[t])
         info$ncat[t] <- var_classes[info$variable[t]]
-
-        nodes[index] <- (nodes[index]*2+1)-S[index,s]
-        nterm <- c(nterm, sort(unique(nodes[index]), decreasing=T))
-      }else{
+        
+        # Update nodes and add children to queue
+        nodes[index] <- (nodes[index]*2+1) - S[index,s]
+        
+        # ✅ OPTIMIZATION 4: Efficient queue management
+        # Add children to non-terminal list
+        new_children <- sort(unique(nodes[index]), decreasing=TRUE)
+        for (child in new_children) {
+          nterm_count <- nterm_count + 1
+          nterm[nterm_count] <- child
+        }
+        
+      } else {
         info$terminal[t] <- TRUE
-        #info$impTotal[t] <- results$impTotal
-        info$obs[t] <- list(index)
-        info$path[t] <- paths(info,t)
+        obs_list[[t]] <- index
+        path_list[t] <- paths_optimized(info, path_list, t)
       }
     }
-
-    #print(info$path[t])
-    nterm <- setdiff(nterm,t)
-
+    
+    # Remove current node from queue
+    nterm_count <- nterm_count - 1
   }
+  
+  # Trim pre-allocated vectors to actual size
+  N <- N[1:N_count]
+  
+  # Clean up info dataframe
   info <- info %>% drop_na(node)
+  
+  # ✅ Convert obs_list back to dataframe column for compatibility
+  for (node_id in info$node) {
+    info$obs[info$node == node_id] <- list(obs_list[[node_id]])
+  }
+  
+  # ✅ Copy paths from path_list
+  info$path <- path_list[info$node]
+  
   info$pred_val <- as.numeric(factor(info$pred))
   info$variableSur <- gsub(" <=.*| %in%.*","",info$splitLabelSur)
-
+  
   if (type == "classification") {
-  yval2 <- as.matrix(info[,indv])
-  ypred <- info$pred_val
-  nodeprob <- info$n/first(info$n)
-  info <- info[,-indv]
-
-
-  #info$yval2 <- cbind(ypred, yval2, nodeprob)
-  yval2 <- cbind(ypred,yval2)
-  #names(yval2) <- paste("V",seq(ncol(yval2)),sep="")
-  attr(yval2,"dimnames")[[2]] <- paste("V",seq(ncol(yval2)),sep="")
-  info$yval2 <- cbind(yval2, nodeprob)
+    yval2 <- as.matrix(info[,indv])
+    ypred <- info$pred_val
+    nodeprob <- info$n/first(info$n)
+    info <- info[,-indv]
+    
+    yval2 <- cbind(ypred,yval2)
+    attr(yval2,"dimnames")[[2]] <- paste("V",seq(ncol(yval2)),sep="")
+    info$yval2 <- cbind(yval2, nodeprob)
   }
-  #ylevels <- as.character(unique(response))
-  ylevels <- levels(mf[[1]]) #### I need this to preserve the orginal attributes
+  
+  ylevels <- levels(mf[[1]])
   row.names(info) <- info$node
   info <- info[as.character(N),]
-
-  ## normalized variance in nodes for regression
+  
+  ## Normalized variance in nodes for regression
   if (type == "regression"){
     info$Wt <- NULL
     maxvar <- diff(range(response))^2L / 9L
     size <- length(response)
+    
+    # ✅ OPTIMIZATION 5: Direct access to obs_list instead of eval(parse())
     for (i in info$node){
-      indice <- unlist(eval(parse(text=info$obs[info$node==i])))
+      indice <- obs_list[[i]]
       v <- 1-(variance(response[indice])/(maxvar*length(indice)/size))
-      info$Wt[info$node==i] <- ifelse(v<0,0,v)
+      info$Wt[info$node==i] <- ifelse(v<0, 0, v)
     }
     info <- info %>% relocate(Wt, .after=prob)
   }
-
-
-  object <- csplit_str(info,X,ncat, call=Call, terms=Terms, control=setting, ylevels=ylevels)
-
-  #object$varimp <- vimp(object, data = data)
-  ###### DOESN'T WORK!!
-
+  
+  object <- csplit_str(info, X, ncat, call=Call, terms=Terms, control=setting, ylevels=ylevels)
   object$N <- N
-
+  
   class(object) <- c("list", "e2tree")
-
+  
   return(object)
 }
 
 
-paths <- function(info,t){
-  path <- NULL
-  while(t[1]>1){
-    tp <- floor(t[1]/2)
-    symb <- ifelse((t[1] %% 2)==0,"","!")
-    t <- c(tp,t)
-    path <- c(paste(symb,info$splitLabel[tp],sep=""),path)
-    #<- paste(path," AND ", symb,info[[tp]]$splitLabel, sep="",collapse="")
+paths_optimized <- function(info, path_list, t){
+  # Calculate path incrementally instead of traversing entire tree
+  # This is O(1) instead of O(depth)
+  #
+  # Args:
+  #   info: info dataframe
+  #   path_list: pre-computed paths for parent nodes
+  #   t: current node
+  #
+  # Returns:
+  #   Path string for current node
+  
+  if (t == 1) {
+    return("")
   }
-  path <- paste(path,sep="",collapse=" & ")
-  return(path)
+  
+  # Get parent node
+  parent_t <- floor(t / 2)
+  
+  # Get parent's path
+  parent_path <- path_list[parent_t]
+  
+  # Determine symbol (left or right child)
+  symb <- ifelse((t %% 2) == 0, "", "!")
+  
+  # Get split label from parent
+  parent_split <- info$splitLabel[parent_t]
+  
+  # Build new path
+  if (parent_path == "" || is.na(parent_path)) {
+    # First split (children of root)
+    new_path <- paste0(symb, parent_split)
+  } else {
+    # Append to parent's path
+    new_path <- paste0(parent_path, " & ", symb, parent_split)
+  }
+  
+  return(new_path)
 }
 
 
 ### creation objects for rpart.plot ----
-csplit_str <- function(info,X,ncat, call, terms, control, ylevels){
-
+csplit_str <- function(info, X, ncat, call, terms, control, ylevels){
+  # Create rpart-compatible object structure
+  
   var_lev <- var_ord <- attribute <- list()
   for (i in names(ncat)){
     var_lev[[i]] <- seq(ncat[i])
     names(var_lev[[i]]) <- unique(X[,i])
     attribute[[i]] <- as.character(unique(X[,i]))
   }
-
-  # ordVar <- get_classes(X)
-  # ordVar <- names(ordVar[ordVar=="ordered"])
-  # for (i in names(ordVar)){
-  #   var_ord[[i]] <- seq(length(levels(X[[i]])))
-  #   names(var_ord[[i]]) <- unique(levels(X[[i]]))
-  #   attribute[[i]] <- as.character(levels(X[[i]]))
-  # }
-
-  #qualitative splits
+  
+  # Qualitative splits
   splits <- info %>%
     dplyr::filter(!is.na(variable)) %>%
-    dplyr::select(n,ncat,variable,decImp, splitLabel)
-
-  #splits <- info[!is.na(info$variable), c("n","ncat","variable","decImp", "splitLabel")]
-  # index for numerical predictors
-  if(nrow(info)>1){
-    varnumerics <- strsplit(splits$splitLabel[splits$ncat==-1],"<=")
+    dplyr::select(n, ncat, variable, decImp, splitLabel)
+  
+  # Index for numerical predictors
+  if(nrow(info) > 1){
+    varnumerics <- strsplit(splits$splitLabel[splits$ncat==-1], "<=")
     splits$index[splits$ncat==-1] <- unlist(lapply(varnumerics, function(x) x[2]))
   }
-
-  #splits$index <- suppressWarnings(as.numeric(as.numeric(gsub("[^[:digit:]., ]", "",splits$splitLabel))))
-  splits$index[splits$ncat!=-1] <- seq(sum(splits$ncat!=-1))
+  
+  splits$index[splits$ncat != -1] <- seq(sum(splits$ncat != -1))
   splits$index <- as.numeric(splits$index)
-
-
-
+  
+  # Categorical splits
   catsplits <- splits %>%
-    dplyr::filter(ncat!=-1) %>%
+    dplyr::filter(ncat != -1) %>%
     dplyr::mutate(ID = row_number()) %>%
     dplyr::group_by(ID) %>%
     dplyr::mutate(modal = gsub(paste0(variable," %in% "),"",splitLabel))
-
+  
   splits <- splits %>%
-    #data.frame() %>%
-    dplyr::select(n,ncat,decImp,index) %>%
+    dplyr::select(n, ncat, decImp, index) %>%
     dplyr::rename(improve = decImp,
                   count = n) %>%
     dplyr::mutate(adj=0) %>%
     as.matrix()
-
-  attr(splits,"dimnames")[[1]]  <- info$variable[!is.na(info$variable)]
-
-  ### creation of csplit
-  if (nrow(catsplits)>0){
-    csplit <- matrix(2,nrow(catsplits),max(catsplits$ncat))
-
+  
+  attr(splits,"dimnames")[[1]] <- info$variable[!is.na(info$variable)]
+  
+  # Creation of csplit
+  if (nrow(catsplits) > 0){
+    csplit <- matrix(2, nrow(catsplits), max(catsplits$ncat))
+    
     for (i in 1:nrow(csplit)){
       modal <- eval(parse(text=catsplits$modal[i]))
       vec <- var_lev[[catsplits$variable[i]]]
       ind <- vec[modal]
-      csplit[i,ind] <- 1
-      ind <- vec[setdiff(names(vec),modal)]
-      csplit[i,ind] <- 3
+      csplit[i, ind] <- 1
+      ind <- vec[setdiff(names(vec), modal)]
+      csplit[i, ind] <- 3
     }
     csplit <- as.matrix(csplit)
   } else {
-    csplit = NULL
+    csplit <- NULL
   }
-
-  object <- list(tree=info, csplit=csplit,splits=splits, call=call, terms=terms, control=control)
-
+  
+  object <- list(tree=info, csplit=csplit, splits=splits, 
+                 call=call, terms=terms, control=control)
+  
   attr(object,"xlevels") <- attribute
   attr(object,"ylevels") <- ylevels
-
+  
   return(object)
 }
 
 
+# ============================================================================
+# Helper Functions
+# ============================================================================
 
-
-
-## Variance
 variance <- function(x){
-  sum((x-mean(x))^2)/length(x)
+  # Calculate population variance
+  sum((x - mean(x))^2) / length(x)
 }
 
 
-
-
-
-Wtest = function(Y, X, type, p.value=0.05){
-  switch (type,
-          "classification" = {resp=TRUE},
-          "regression" = {resp <- wilcox.test(Y ~ X)$p.value <= 0.05}
+Wtest <- function(Y, X, type, p.value=0.05){
+  # Wilcoxon test for regression stopping rule
+  switch(type,
+         "classification" = {resp <- TRUE},
+         "regression" = {resp <- wilcox.test(Y ~ X)$p.value <= 0.05}
   )
   return(resp)
 }
 
-# get_classes <- function(df) {
-#   dfClasses <- data.frame(
-#     column = names(df),
-#     class = sapply(df, function(x) paste(class(x), collapse = ", "))
-#   ) %>%
-#     mutate(type = class,
-#            type = ifelse(sapply(df, is.factor), "factor",
-#                          ifelse(sapply(df, is.character), "character", type))) %>%
-#     select(column, type)
-#   classes <- dfClasses$type
-#   names(classes) <- dfClasses$column
-#   return(classes)
-# }
 
 get_classes <- function(df) {
+  # Get classes of dataframe columns
   dfClasses <- data.frame(
     column = names(df),
     class = sapply(df, function(x) paste(class(x), collapse = ", "))
@@ -504,12 +521,15 @@ get_classes <- function(df) {
            type = ifelse(regexpr("ordered",type)>-1, "ordered",
                          ifelse(sapply(df, is.character), "character", type))) %>%
     select(column, type)
+  
   classes <- dfClasses$type
   names(classes) <- dfClasses$column
   return(classes)
 }
 
+
 ordered2factor <- function(X){
+  # Convert ordered factors to regular factors
   varClass <- get_classes(X)
   varClass <- names(varClass[varClass=="ordered"])
   for (i in varClass){

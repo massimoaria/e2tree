@@ -85,29 +85,31 @@ Supported ensemble types for \emph{classification} or \emph{regression} tasks:
 }
 \examples{
 \donttest{
-## Large dataset example with optimization
-library(ranger)
+data("iris")
 
-# Simulate large dataset
-set.seed(123)
-n <- 50000
-large_data <- data.frame(
-  x1 = rnorm(n),
-  x2 = rnorm(n),
-  x3 = rnorm(n),
-  x4 = rnorm(n),
-  y = factor(sample(c("A", "B", "C"), n, replace = TRUE))
-)
+# Create training and validation set:
+smp_size <- floor(0.75 * nrow(iris))
+train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+training <- iris[train_ind, ]
+validation <- iris[-train_ind, ]
+response_training <- training[,5]
+response_validation <- validation[,5]
 
-# Train model
-ensemble <- ranger(y ~ ., data = large_data, num.trees = 500)
+# Perform training:
+## "randomForest" package
+ensemble <- randomForest::randomForest(Species ~ ., data=training,
+importance=TRUE, proximity=TRUE)
+
+## "ranger" package
+ensemble <- ranger::ranger(Species ~ ., data = iris,
+num.trees = 1000, importance = 'impurity')
 
 # Compute dissimilarity matrix with optimizations
 D <- createDisMatrix_optimized(
   ensemble,
-  data = large_data,
-  label = "y",
-  parallel = list(active = TRUE, no_cores = 4),
+  data = training,
+  label = "Species",
+  parallel = list(active = FALSE, no_cores = 1),
   chunk_size = 10000,  # Process 10K rows at a time
   batch_aggregate = 20, # Aggregate 20 trees at once
   verbose = TRUE
