@@ -1,4 +1,4 @@
-# e2tree 0.3.0
+# e2tree 1.0.0
 
 ## New functions
 

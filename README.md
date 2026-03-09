@@ -155,7 +155,7 @@ plot_e2tree <- rpart.plot::rpart.plot(expl_plot,
                                       ) 
 ```
 
-<img src="man/figures/README-unnamed-chunk-10-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-10-1.png" alt="" width="100%" />
 
 Prediction with the new tree (example on training)
 
@@ -223,12 +223,12 @@ V
 #> $g_imp
 ```
 
-<img src="man/figures/README-unnamed-chunk-15-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-15-1.png" alt="" width="100%" />
 
     #> 
     #> $g_acc
 
-<img src="man/figures/README-unnamed-chunk-15-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-15-2.png" alt="" width="100%" />
 
 Comparison with the validation sample
 
@@ -266,7 +266,7 @@ table(pred_val$fit, response_validation)
 roc_res <- roc(response_validation, pred_val$score, target="virginica")
 ```
 
-<img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-18-1.png" alt="" width="100%" />
 
 ``` r
 roc_res$auc
@@ -297,7 +297,7 @@ obtained under random reordering.
 eComparison(training, tree, D, graph = TRUE)
 ```
 
-<img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-19-1.png" alt="" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" alt="" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" alt="" width="100%" />
 
     #> $z.stat
     #> [1] 1046.088
