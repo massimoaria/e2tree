@@ -78,7 +78,7 @@ utils::globalVariables(c("resp", "W", "data_XGB", "i"))
 #' num.trees = 1000, importance = 'impurity')
 #'
 #' # Compute dissimilarity matrix with optimizations
-#' D <- createDisMatrix_optimized(
+#' D <- createDisMatrix(
 #'   ensemble,
 #'   data = training,
 #'   label = "Species",
@@ -91,7 +91,7 @@ utils::globalVariables(c("resp", "W", "data_XGB", "i"))
 #'
 #' @export
 
-createDisMatrix_optimized <- function(
+createDisMatrix <- function(
   ensemble,
   data,
   label,
@@ -379,14 +379,3 @@ maxValue <- function(x, y) {
 
 ## Variance — delegates to shared utility
 variance <- e2_variance
-
-
-#' Dissimilarity Matrix
-#'
-#' Wrapper for \code{\link{createDisMatrix_optimized}}.
-#' See \code{\link{createDisMatrix_optimized}} for full documentation.
-#'
-#' @inheritParams createDisMatrix_optimized
-#' @return A dissimilarity matrix.
-#' @export
-createDisMatrix <- createDisMatrix_optimized

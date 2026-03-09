@@ -9,7 +9,7 @@ Authors@R: c(
            comment = c(ORCID = "0000-0002-8517-9411")),
            person(given = "Agostino",
            family = "Gnasso",
-           role = "aut",
+           role = c("aut"),
            email = "agostino.gnasso@unina.it",
            comment = c(ORCID = "0000-0002-8046-3923"))
            )
@@ -45,3 +45,5 @@ Suggests:
     testthat (>= 3.0.0),
     visNetwork
 Config/testthat/edition: 3
+Depends: 
+    R (>= 3.5)

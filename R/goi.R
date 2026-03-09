@@ -345,6 +345,7 @@ goi_perm <- function(O, O_hat, n_perm = 999,
 }
 
 
+#' @method print goi_perm
 #' @export
 print.goi_perm <- function(x, digits = 4, ...) {
   
@@ -408,6 +409,7 @@ print.goi_perm <- function(x, digits = 4, ...) {
 #' @param x A goi_perm object
 #' @param ... Additional arguments passed to hist()
 #'
+#' @method plot goi_perm
 #' @export
 plot.goi_perm <- function(x, ...) {
   
@@ -526,6 +528,7 @@ goi_analysis <- function(O, O_hat, n_perm = 999,
 }
 
 
+#' @method print goi_analysis
 #' @export
 print.goi_analysis <- function(x, digits = 4, ...) {
   

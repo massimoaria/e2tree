@@ -2,7 +2,7 @@
 % Please edit documentation in R/createDisMatrix.R
 \name{createDisMatrix}
 \alias{createDisMatrix}
-\title{Dissimilarity Matrix}
+\title{Dissimilarity matrix - Optimized for Large Datasets}
 \usage{
 createDisMatrix(
   ensemble,
@@ -52,9 +52,68 @@ Default: tempdir().}
 before adding to main matrix (reduces memory peaks). Default: 10.}
 }
 \value{
-A dissimilarity matrix.
+A dissimilarity matrix. This is a dissimilarity matrix measuring the
+discordance between two observations concerning a given random forest
+model.
 }
 \description{
-Wrapper for \code{\link{createDisMatrix_optimized}}.
-See \code{\link{createDisMatrix_optimized}} for full documentation.
+The function createDisMatrix creates a dissimilarity matrix among
+observations from an ensemble tree. This optimized version is designed
+for large datasets (50K-500K observations) with improved memory management
+and chunking capabilities.
+}
+\details{
+This optimized version implements several strategies for handling
+large datasets:
+
+\itemize{
+\item \strong{Memory-efficient aggregation}: Results from parallel trees are
+aggregated in batches to avoid memory peaks
+\item \strong{Chunking}: For very large matrices, computation can be split into
+manageable chunks
+\item \strong{Sparse matrix optimization}: Maintains sparsity throughout computation
+\item \strong{Automatic garbage collection}: Explicit memory cleanup at critical points
+\item \strong{Disk-based computation}: Optional saving of intermediate results for
+datasets exceeding memory capacity
+}
+
+Supported ensemble types for \emph{classification} or \emph{regression} tasks:
+\itemize{
+\item \code{randomForest}
+\item \code{ranger}
+}
+}
+\examples{
+\donttest{
+data("iris")
+
+# Create training and validation set:
+smp_size <- floor(0.75 * nrow(iris))
+train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+training <- iris[train_ind, ]
+validation <- iris[-train_ind, ]
+response_training <- training[,5]
+response_validation <- validation[,5]
+
+# Perform training:
+## "randomForest" package
+ensemble <- randomForest::randomForest(Species ~ ., data=training,
+importance=TRUE, proximity=TRUE)
+
+## "ranger" package
+ensemble <- ranger::ranger(Species ~ ., data = iris,
+num.trees = 1000, importance = 'impurity')
+
+# Compute dissimilarity matrix with optimizations
+D <- createDisMatrix(
+  ensemble,
+  data = training,
+  label = "Species",
+  parallel = list(active = FALSE, no_cores = 1),
+  chunk_size = 10000,  # Process 10K rows at a time
+  batch_aggregate = 20, # Aggregate 20 trees at once
+  verbose = TRUE
+)
+}
+
 }
