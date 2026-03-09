@@ -9,7 +9,7 @@ Authors@R: c(
            comment = c(ORCID = "0000-0002-8517-9411")),
            person(given = "Agostino",
            family = "Gnasso",
-           role = "aut",
+           role = c("aut"),
            email = "agostino.gnasso@unina.it",
            comment = c(ORCID = "0000-0002-8046-3923"))
            )
@@ -21,24 +21,29 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports:
+    ape,
     dplyr,
-    doParallel,
     parallel,
-    foreach,
     future.apply,
     ggplot2,
     Matrix,
     partitions,
     purrr,
     tidyr,
-    ranger,
-    randomForest,
-    rpart.plot,
-    Rcpp,
-    RSpectra,
-    ape
+    Rcpp
 LazyData: true
 LinkingTo: Rcpp
-Suggests: 
-    testthat (>= 3.0.0)
+Suggests:
+    doParallel,
+    foreach,
+    htmlwidgets,
+    jsonlite,
+    randomForest,
+    ranger,
+    rpart.plot,
+    RSpectra,
+    testthat (>= 3.0.0),
+    visNetwork
 Config/testthat/edition: 3
+Depends: 
+    R (>= 3.5)

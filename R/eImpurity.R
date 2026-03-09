@@ -1,40 +1,43 @@
-eImpurity <- function(y,index,S){
-  S <- S[index,]
-  #v <- var(S)
+eImpurity <- function(y, index, S) {
+  S_sub <- S[index, , drop = FALSE]
   n <- length(index)
-  tab <- colSums(S)
-  ind <- !(tab>1 & tab < (n-1))
 
-  options(future.globals.maxSize = 2 * 1024^3)  # set limit to 2 GB
-  imp <- future.apply::future_apply(S,2,function(s){
-         g <- dissimilarity(y[index,index],s)
-    })
-  imp[ind] <- Inf
+  # Pre-filter: remove splits where one group has < 2 obs
+  tab <- colSums(S_sub)
+  valid <- which(tab >= 2 & tab <= (n - 2))
+
+  if (length(valid) == 0) {
+    imp <- rep(Inf, ncol(S_sub))
+    names(imp) <- colnames(S_sub)
+    return(imp)
+  }
+
+  # Extract the dissimilarity sub-matrix for this node
+  y_sub <- y[index, index]
+
+  # Use C++ for fast impurity computation on valid splits only
+  S_valid <- matrix(as.integer(as.matrix(S_sub[, valid, drop = FALSE])),
+                    nrow = n, ncol = length(valid))
+  imp_valid <- compute_impurity_cpp(y_sub, S_valid)
+
+  # Build full result vector
+  imp <- rep(Inf, ncol(S_sub))
+  names(imp) <- colnames(S_sub)
+  imp[valid] <- imp_valid
 
   return(imp)
 }
 
 
 ############
-
-dissimilarity <- function(y,s){
-
-  dR <- y[s==0,s==0]
-  dL <- y[s==1,s==1]
-  n=dim(y)[1]
-  nR=sum(s==0)
-  nL=n-nR
-  sR <- sum(dR)/(n*(nR-1))
-  #sR <- ifelse(is.nan(sR),0,sR)
-
-  sL <- sum(dL)/(n*(nL-1))
-  #sL <- ifelse(is.nan(sL),0,sL)
-  imp <- sR+sL
-
-  return(imp)
+# Kept as fallback for debugging; no longer used in main loop
+dissimilarity <- function(y, s) {
+  n <- dim(y)[1]
+  nR <- sum(s == 0)
+  nL <- n - nR
+  dR <- y[s == 0, s == 0]
+  dL <- y[s == 1, s == 1]
+  sR <- sum(dR) / (n * (nR - 1))
+  sL <- sum(dL) / (n * (nL - 1))
+  return(sR + sL)
 }
-
-
-
-
-

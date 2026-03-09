@@ -33,10 +33,10 @@ response_training <- training[,5]
 response_validation <- validation[,5]
 
 # Perform training:
-ensemble <- randomForest::randomForest(Species ~ ., data=training, 
+ensemble <- randomForest::randomForest(Species ~ ., data=training,
 importance=TRUE, proximity=TRUE)
 
-D <- createDisMatrix(ensemble, data=training, label = "Species", 
+D <- createDisMatrix(ensemble, data=training, label = "Species",
                              parallel = list(active=FALSE, no_cores = 1))
 
 setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
@@ -57,11 +57,11 @@ response_training <- training[,1]
 response_validation <- validation[,1]
 
 # Perform training
-ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000,
 importance=TRUE, proximity=TRUE)
 
-D = createDisMatrix(ensemble, data=training, label = "mpg", 
-                              parallel = list(active=FALSE, no_cores = 1))  
+D = createDisMatrix(ensemble, data=training, label = "mpg",
+                              parallel = list(active=FALSE, no_cores = 1))
 
 setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 tree <- e2tree(mpg ~ ., training, D, ensemble, setting)

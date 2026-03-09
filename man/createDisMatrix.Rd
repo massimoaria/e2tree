@@ -2,14 +2,19 @@
 % Please edit documentation in R/createDisMatrix.R
 \name{createDisMatrix}
 \alias{createDisMatrix}
-\title{Dissimilarity matrix}
+\title{Dissimilarity matrix - Optimized for Large Datasets}
 \usage{
 createDisMatrix(
   ensemble,
   data,
   label,
   parallel = list(active = FALSE, no_cores = 1),
-  verbose = FALSE
+  verbose = FALSE,
+  chunk_size = NULL,
+  memory_limit = NULL,
+  use_disk = FALSE,
+  temp_dir = tempdir(),
+  batch_aggregate = 10
 )
 }
 \arguments{
@@ -30,6 +35,21 @@ runs on a single core. Default: \code{list(active = FALSE, no_cores = 1)}.}
 \item{verbose}{Logical. If TRUE, the function prints progress messages and
 other information during execution. If FALSE (the default), messages are
 suppressed.}
+
+\item{chunk_size}{Integer. Number of rows to process in each chunk. If NULL,
+automatically determined based on available memory and dataset size.
+Default: NULL (auto).}
+
+\item{memory_limit}{Numeric. Maximum memory to use in GB. Default: NULL (no limit).}
+
+\item{use_disk}{Logical. If TRUE and dataset is very large, intermediate results
+are saved to disk. Default: FALSE.}
+
+\item{temp_dir}{Character. Directory for temporary files if use_disk = TRUE.
+Default: tempdir().}
+
+\item{batch_aggregate}{Integer. Number of tree results to aggregate at once
+before adding to main matrix (reduces memory peaks). Default: 10.}
 }
 \value{
 A dissimilarity matrix. This is a dissimilarity matrix measuring the
@@ -38,12 +58,26 @@ model.
 }
 \description{
 The function createDisMatrix creates a dissimilarity matrix among
-observations from an ensemble tree.
+observations from an ensemble tree. This optimized version is designed
+for large datasets (50K-500K observations) with improved memory management
+and chunking capabilities.
 }
 \details{
-An \code{ensemble} is a trained object of one of these classes trained
-for \emph{classification} or \emph{regression} task:
+This optimized version implements several strategies for handling
+large datasets:
 
+\itemize{
+\item \strong{Memory-efficient aggregation}: Results from parallel trees are
+aggregated in batches to avoid memory peaks
+\item \strong{Chunking}: For very large matrices, computation can be split into
+manageable chunks
+\item \strong{Sparse matrix optimization}: Maintains sparsity throughout computation
+\item \strong{Automatic garbage collection}: Explicit memory cleanup at critical points
+\item \strong{Disk-based computation}: Optional saving of intermediate results for
+datasets exceeding memory capacity
+}
+
+Supported ensemble types for \emph{classification} or \emph{regression} tasks:
 \itemize{
 \item \code{randomForest}
 \item \code{ranger}
@@ -51,7 +85,6 @@ for \emph{classification} or \emph{regression} task:
 }
 \examples{
 \donttest{
-## Classification
 data("iris")
 
 # Create training and validation set:
@@ -64,41 +97,23 @@ response_validation <- validation[,5]
 
 # Perform training:
 ## "randomForest" package
-ensemble <- randomForest::randomForest(Species ~ ., data=training, 
+ensemble <- randomForest::randomForest(Species ~ ., data=training,
 importance=TRUE, proximity=TRUE)
 
 ## "ranger" package
-ensemble <- ranger::ranger(Species ~ ., data = iris, 
+ensemble <- ranger::ranger(Species ~ ., data = iris,
 num.trees = 1000, importance = 'impurity')
 
-D <- createDisMatrix(ensemble, data=training,
-                     label = "Species",
-                     parallel = list(active=FALSE, no_cores = 1))
-
-
-## Regression
-data("mtcars")
-
-# Create training and validation set:
-smp_size <- floor(0.75 * nrow(mtcars))
-train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
-training <- mtcars[train_ind, ]
-validation <- mtcars[-train_ind, ]
-response_training <- training[,1]
-response_validation <- validation[,1]
-
-# Perform training
-## "randomForest" package
-ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
-importance=TRUE, proximity=TRUE)
-
-## "ranger" package
-ensemble <- ranger::ranger(formula = mpg ~ ., data = training, 
-num.trees = 1000, importance = "permutation")
-
-D = createDisMatrix(ensemble, data=training,
-                        label = "mpg",
-                       parallel = list(active=FALSE, no_cores = 1))
-
+# Compute dissimilarity matrix with optimizations
+D <- createDisMatrix(
+  ensemble,
+  data = training,
+  label = "Species",
+  parallel = list(active = FALSE, no_cores = 1),
+  chunk_size = 10000,  # Process 10K rows at a time
+  batch_aggregate = 20, # Aggregate 20 trees at once
+  verbose = TRUE
+)
 }
+
 }

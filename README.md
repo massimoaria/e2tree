@@ -20,7 +20,7 @@ status](https://www.r-pkg.org/badges/version/e2tree)](https://CRAN.R-project.org
 The **Explainable Ensemble Trees** (**e2tree**) key idea consists of the
 definition of an algorithm to represent every ensemble approach based on
 decision trees model using a single tree-like structure. The goal is to
-explain the results from the esemble algorithm while preserving its
+explain the results from the ensemble algorithm while preserving its
 level of accuracy, which always outperforms those provided by a decision
 tree. The proposed method is based on identifying the relationship
 tree-like structure explaining the classification or regression paths
@@ -83,13 +83,13 @@ randomForest package and then subsequently use e2tree to obtain an
 explainable tree synthesis of the ensemble classifier. We run a Random
 Forest (RF) model, and then obtain the proximity matrix of the
 observations as output. The idea behind the proximity matrix: if a pair
-of observations is often at the a terminal node of several trees, this
-means that both explain an underlying relationship. From this we are
-able to calculate co-occurrences at nodes between pairs of observations
-and obtain a matrix O of Co-Occurrences that will then be used to
-construct the graphical E2Tree output. The final aim will be to explain
-the relationship between predictors and response, reconstructing the
-same structure as the proximity matrix output of the RF model.
+of observations is often at a terminal node of several trees, this means
+that both explain an underlying relationship. From this we are able to
+calculate co-occurrences at nodes between pairs of observations and
+obtain a matrix O of Co-Occurrences that will then be used to construct
+the graphical E2Tree output. The final aim will be to explain the
+relationship between predictors and response, reconstructing the same
+structure as the proximity matrix output of the RF model.
 
 ``` r
 # Set random seed to make results reproducible:
@@ -107,7 +107,7 @@ response_training <- training[,5]
 response_validation <- validation[,5]
 ```
 
-Train an Random Forest model with 1000 weak learners
+Train a Random Forest model with 1000 weak learners
 
 ``` r
 # Perform training with "ranger" or "randomForest" package:
@@ -123,14 +123,9 @@ the createDisMatrix function
 
 ``` r
 D = createDisMatrix(ensemble, data = training, label = "Species", parallel = list(active = FALSE, no_cores = NULL))
-#> 
-#> Attaching package: 'Rcpp'
-#> The following object is masked from 'package:rsample':
-#> 
-#>     populate
 ```
 
-setting e2tree parameters
+Setting e2tree parameters
 
 ``` r
 setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
@@ -275,7 +270,7 @@ roc_res <- roc(response_validation, pred_val$score, target="virginica")
 
 ``` r
 roc_res$auc
-#> [1] 0.9324973
+#> [1] 0.9325397
 ```
 
 To evaluate how well our tree captures the structure of the RF and
@@ -293,7 +288,7 @@ test](https://aacrjournals.org/cancerres/article/27/2_Part_1/209/476508/The-Dete
 a statistical method that quantifies the correlation between the two
 matrices. The Mantel test is a non-parametric method used to assess the
 correlation between two distance or similarity matrices. It is
-particularly useful when we are interested to study the relationships
+particularly useful when we are interested in studying the relationships
 between dissimilarity structures. The test uses permutation to generate
 a null distribution, comparing the observed statistic against values
 obtained under random reordering.
@@ -305,7 +300,7 @@ eComparison(training, tree, D, graph = TRUE)
 <img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" width="100%" />
 
     #> $z.stat
-    #> [1] 1046.257
+    #> [1] 1046.088
     #> 
     #> $p
     #> [1] 0.001

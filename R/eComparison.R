@@ -2,7 +2,7 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 
 #' Comparison of Heatmaps and Mantel Test
 #'
-#' This function processes heatmaps for visual comparison and performs the Mantel test between a proximity matrix derived from Random Forest outputs and a matrix estimated 
+#' This function processes heatmaps for visual comparison and performs the Mantel test between a proximity matrix derived from Random Forest outputs and a matrix estimated
 #' by E2Tree. Heatmaps are generated for both matrices. The Mantel test quantifies the correlation between the matrices, offering a statistical measure of similarity.
 #'
 #' @param data a data frame containing the variables in the model. It is the data frame used for ensemble learning.
@@ -16,7 +16,7 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 #'     \item \code{E2Tree HeatMap}: A heatmap plot of the E2Tree-estimated matrix.
 #'     \item \code{Mantel Test}: Results of the Mantel test, including the correlation coefficient and significance level.
 #'   }
-#'   
+#'
 #' @examples
 #' \donttest{
 #' ## Classification:
@@ -31,21 +31,21 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 #' response_validation <- validation[,5]
 #'
 #' # Perform training:
-#' ensemble <- randomForest::randomForest(Species ~ ., data=training, 
+#' ensemble <- randomForest::randomForest(Species ~ ., data=training,
 #' importance=TRUE, proximity=TRUE)
-#' 
-#' D <- createDisMatrix(ensemble, data=training, label = "Species", 
+#'
+#' D <- createDisMatrix(ensemble, data=training, label = "Species",
 #'                           parallel = list(active=FALSE, no_cores = 1))
-#' 
+#'
 #' setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 #' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 #'
 #' eComparison(training, tree, D)
-#' 
-#' 
+#'
+#'
 #' ## Regression
 #' data("mtcars")
-#' 
+#'
 #' # Create training and validation set:
 #' smp_size <- floor(0.75 * nrow(mtcars))
 #' train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
@@ -53,19 +53,19 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 #' validation <- mtcars[-train_ind, ]
 #' response_training <- training[,1]
 #' response_validation <- validation[,1]
-#' 
+#'
 #' # Perform training
-#' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+#' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000,
 #' importance=TRUE, proximity=TRUE)
-#' 
-#' D = createDisMatrix(ensemble, data=training, label = "mpg", 
-#'                           parallel = list(active=FALSE, no_cores = 1))  
-#' 
+#'
+#' D = createDisMatrix(ensemble, data=training, label = "mpg",
+#'                           parallel = list(active=FALSE, no_cores = 1))
+#'
 #' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 #' tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
-#' 
+#'
 #' eComparison(training, tree, D)
-#' 
+#'
 #' }
 #'
 #' @export
@@ -75,46 +75,46 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 
 eComparison <- function(data, fit, D, graph = TRUE) {
   # === Input Validation ===
-  
+
   # Validate 'data'
   if (!is.data.frame(data) || nrow(data) == 0) {
     stop("Error: 'data' must be a non-empty data frame.")
   }
-  
+
   # Validate 'fit' (must be an 'e2tree' object)
   if (!inherits(fit, "e2tree")) {
     stop("Error: 'fit' must be an 'e2tree' object.")
   }
-  
+
   # Validate 'D' (dissimilarity matrix)
   if (!is.matrix(D) || nrow(D) != ncol(D)) {
     stop("Error: 'D' must be a square dissimilarity matrix.")
   }
-  
+
   # Ensure number of rows in 'data' matches the dimension of 'D'
   if (nrow(data) != nrow(D)) {
     stop("Error: The number of rows in 'data' must match the dimensions of 'D'.")
   }
-  
+
   # === Proceed with the function ===
-  
+
   # Get the number of observations in the data
   n <- nrow(data)
-  
+
   # Extract the tree structure from the tree object
   df <- fit$tree
-  
+
   # Identify terminal nodes in the tree
   terminal_nodes <- df$node[df$terminal]
-  
+
   # Initialize a matrix Ps
   Ps <- matrix(0, n, n)
-  
+
   # Populate the matrix Ps based on classification or regression
   for (i in terminal_nodes) {
     # Extract observations corresponding to the current terminal node
-    obs <- eval(parse(text = df$obs[df$node == i]))
-    
+    obs <- unlist(df$obs[df$node == i])
+
     # Populate Ps using the appropriate column based on the task type
     if (!is.null(df$prob)) {
       # Assign the probability of the current terminal node to the respective cells
@@ -123,73 +123,72 @@ eComparison <- function(data, fit, D, graph = TRUE) {
       Ps[obs, obs] <- df$Wt[df$node == i]
     }
   }
-  
+
   # Set diagonal elements of Ps to 1
   diag(Ps) <- 1
-  
+
   # Assign row and column names to the Ps matrix
   rownames(Ps) <- 1:nrow(Ps)
   colnames(Ps) <- 1:ncol(Ps)
-  
+
   # Use the provided O matrix
   D_exp <- D
-  
+
   # Perform hierarchical clustering on the O matrix
   clusD <- hclust(as.dist(D_exp))
-  
+
   # Extract the order of observations based on clustering
   order <- clusD$order
-  
+
   # Reorder the Ps matrix based on the clustering order
   Ps_ord <- Ps[order, order]
-  
+
   # Update row and column names to reflect the new order
   rownames(Ps_ord) <- order
   colnames(Ps_ord) <- order
-  
-  
+
+
   # Perform Mantel test between the two matrices
   mantel_test <- ape::mantel.test(
-    Ps_ord, 
-    1 - D_exp[order, order], 
-    graph = graph, 
+    Ps_ord,
+    1 - D_exp[order, order],
+    graph = graph,
     main = "Mantel test",
     xlab = "z-statistic", ylab = "Density"
   )
-  
+
   prox_matrix_e2tree <- sqrt(Ps_ord)
   prox_matrix_ens <- sqrt(1 - D_exp[order, order])
-  
+
   if (graph){
     # Save the E2Tree heatmap as an object
-    
+
     e2heatmap(prox_matrix_e2tree)
 
-    
+
     # Save the Random Forest heatmap as an object
-    
+
     e2heatmap(prox_matrix_ens)
-    
+
   }
-  
-  results <- list(mantel_test = mantel_test, 
+
+  results <- list(mantel_test = mantel_test,
              Proximity_matrix_e2tree = prox_matrix_e2tree,
              Proximity_matrix_ensemble = prox_matrix_ens)
 
   print(mantel_test)
   # Return only the Mantel test result and heatmaps
-  invisible(results) 
+  invisible(results)
 
 }
 
 
 e2heatmap <- function(data_matrix) {
   heatmap(
-    data_matrix, 
-    Rowv = NA, 
-    Colv = NA, 
-    scale = "none", 
+    data_matrix,
+    Rowv = NA,
+    Colv = NA,
+    scale = "none",
     col = colorRampPalette(c("white", "black"))(100)
   )
 }
-
