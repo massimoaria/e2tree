@@ -2,7 +2,7 @@ library(testthat)
 library(e2tree)
 library(randomForest)
 
-test_that("eComparison works correctly with valid inputs (classification case)", {
+test_that("eValidation works correctly with valid inputs (classification case)", {
   set.seed(42)
 
   # Prepare data
@@ -22,15 +22,15 @@ test_that("eComparison works correctly with valid inputs (classification case)",
   # Generate e2tree model
   fit <- e2tree(Species ~ ., training, D, ensemble, setting)
 
-  # Run eComparison
-  comparison <- eComparison(training, fit, D, graph=FALSE)
+  # Run eValidation
+  comparison <- eValidation(training, fit, D, graph=FALSE)
 
   # Tests
   expect_type(comparison, "list")  # Should return a list
   expect_true("mantel_test" %in% names(comparison))
 })
 
-test_that("eComparison handles incorrect input types (classification case)", {
+test_that("eValidation handles incorrect input types (classification case)", {
   set.seed(42)
 
   data(iris)
@@ -43,21 +43,21 @@ test_that("eComparison handles incorrect input types (classification case)", {
   fit <- e2tree(Species ~ ., training, D, ensemble, setting)
 
   # Test incorrect inputs
-  expect_error(eComparison(NULL, fit, D, graph=FALSE),
+  expect_error(eValidation(NULL, fit, D, graph=FALSE),
                "Error: 'data' must be a non-empty data frame.")
 
-  expect_error(eComparison(training, NULL, D, graph=FALSE),
+  expect_error(eValidation(training, NULL, D, graph=FALSE),
                "Error: 'fit' must be an 'e2tree' object.")
 
-  expect_error(eComparison(training, fit, NULL, graph=FALSE),
+  expect_error(eValidation(training, fit, NULL, graph=FALSE),
                "Error: 'D' must be a square dissimilarity matrix.")
 
-  expect_error(eComparison(training, fit, matrix(1, 5, 5), graph=FALSE),
+  expect_error(eValidation(training, fit, matrix(1, 5, 5), graph=FALSE),
                "Error: The number of rows in 'data' must match the dimensions of 'D'.")
 })
 
 
-test_that("eComparison works correctly with valid inputs (regression case)", {
+test_that("eValidation works correctly with valid inputs (regression case)", {
   set.seed(42)
 
   # Prepare data
@@ -77,15 +77,15 @@ test_that("eComparison works correctly with valid inputs (regression case)", {
   # Generate e2tree model
   fit <- e2tree(mpg ~ ., training, D, ensemble, setting)
 
-  # Run eComparison
-  comparison <- eComparison(training, fit, D, graph=FALSE)
+  # Run eValidation
+  comparison <- eValidation(training, fit, D, graph=FALSE)
 
   # Tests
   expect_type(comparison, "list")  # Should return a list
   expect_true("mantel_test" %in% names(comparison))
 })
 
-test_that("eComparison handles incorrect input types (regression case)", {
+test_that("eValidation handles incorrect input types (regression case)", {
   set.seed(42)
 
   data(mtcars)
@@ -98,15 +98,15 @@ test_that("eComparison handles incorrect input types (regression case)", {
   fit <- e2tree(mpg ~ ., training, D, ensemble, setting)
 
   # Test incorrect inputs
-  expect_error(eComparison(NULL, fit, D, graph=FALSE),
+  expect_error(eValidation(NULL, fit, D, graph=FALSE),
                "Error: 'data' must be a non-empty data frame.")
 
-  expect_error(eComparison(training, NULL, D, graph=FALSE),
+  expect_error(eValidation(training, NULL, D, graph=FALSE),
                "Error: 'fit' must be an 'e2tree' object.")
 
-  expect_error(eComparison(training, fit, NULL, graph=FALSE),
+  expect_error(eValidation(training, fit, NULL, graph=FALSE),
                "Error: 'D' must be a square dissimilarity matrix.")
 
-  expect_error(eComparison(training, fit, matrix(1, 5, 5), graph=FALSE),
+  expect_error(eValidation(training, fit, matrix(1, 5, 5), graph=FALSE),
                "Error: The number of rows in 'data' must match the dimensions of 'D'.")
 })
