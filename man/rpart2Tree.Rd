@@ -45,10 +45,12 @@ ensemble <- randomForest::randomForest(Species ~ ., data=training,
 importance=TRUE, proximity=TRUE)
 
 ## "ranger" package
-ensemble <- ranger::ranger(Species ~ ., data = iris, 
-num.trees = 1000, importance = 'impurity')
+if (requireNamespace("ranger", quietly = TRUE)) {
+  ensemble <- ranger::ranger(Species ~ ., data = iris,
+    num.trees = 1000, importance = 'impurity')
+}
 
-D <- createDisMatrix(ensemble, data=training, label = "Species", 
+D <- createDisMatrix(ensemble, data=training, label = "Species",
                              parallel = list(active=FALSE, no_cores = 1))
 
 setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
@@ -78,11 +80,13 @@ ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000,
 importance=TRUE, proximity=TRUE)
 
 ## "ranger" package
-ensemble <- ranger::ranger(formula = mpg ~ ., data = training, 
-num.trees = 1000, importance = "permutation")
+if (requireNamespace("ranger", quietly = TRUE)) {
+  ensemble <- ranger::ranger(formula = mpg ~ ., data = training,
+    num.trees = 1000, importance = "permutation")
+}
 
-D = createDisMatrix(ensemble, data=training, label = "mpg", 
-                       parallel = list(active=FALSE, no_cores = 1))  
+D = createDisMatrix(ensemble, data=training, label = "mpg",
+                       parallel = list(active=FALSE, no_cores = 1))
 
 setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 tree <- e2tree(mpg ~ ., training, D, ensemble, setting)

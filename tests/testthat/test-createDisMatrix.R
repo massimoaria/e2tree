@@ -85,6 +85,7 @@ test_that("createDisMatrix works with parallelization", {
 library(testthat)
 
 test_that("createDisMatrix works correctly for classification task (ranger)", {
+  skip_if_not_installed("ranger")
   set.seed(42)
 
   # Prepare data
@@ -115,6 +116,7 @@ test_that("createDisMatrix works correctly for classification task (ranger)", {
 })
 
 test_that("createDisMatrix works correctly for regression task (ranger)", {
+  skip_if_not_installed("ranger")
   set.seed(42)
 
   # Prepare data
@@ -144,6 +146,7 @@ test_that("createDisMatrix works correctly for regression task (ranger)", {
 })
 
 test_that("createDisMatrix handles incorrect input types (ranger)", {
+  skip_if_not_installed("ranger")
   set.seed(42)
 
   data(iris)
@@ -172,6 +175,7 @@ test_that("createDisMatrix handles incorrect input types (ranger)", {
 })
 
 test_that("createDisMatrix works with parallelization (ranger)", {
+  skip_if_not_installed("ranger")
   set.seed(42)
 
   data(iris)
