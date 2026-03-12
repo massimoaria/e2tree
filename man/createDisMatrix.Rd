@@ -101,8 +101,10 @@ ensemble <- randomForest::randomForest(Species ~ ., data=training,
 importance=TRUE, proximity=TRUE)
 
 ## "ranger" package
-ensemble <- ranger::ranger(Species ~ ., data = iris,
-num.trees = 1000, importance = 'impurity')
+if (requireNamespace("ranger", quietly = TRUE)) {
+  ensemble <- ranger::ranger(Species ~ ., data = iris,
+    num.trees = 1000, importance = 'impurity')
+}
 
 # Compute dissimilarity matrix with optimizations
 D <- createDisMatrix(

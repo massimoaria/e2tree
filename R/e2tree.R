@@ -43,8 +43,10 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' importance=TRUE, proximity=TRUE)
 #'
 #' ## "ranger" package
-#' ensemble <- ranger::ranger(Species ~ ., data = iris,
-#' num.trees = 1000, importance = 'impurity')
+#' if (requireNamespace("ranger", quietly = TRUE)) {
+#'   ensemble <- ranger::ranger(Species ~ ., data = iris,
+#'     num.trees = 1000, importance = 'impurity')
+#' }
 #'
 #' D <- createDisMatrix(ensemble, data=training, label = "Species",
 #'                               parallel = list(active=FALSE, no_cores = 1))
@@ -71,8 +73,10 @@ utils::globalVariables(c("node", "Y", "p", "variable", "decImp", "splitLabel", "
 #' importance=TRUE, proximity=TRUE)
 #'
 #' ## "ranger" package
-#' ensemble <- ranger::ranger(formula = mpg ~ ., data = training,
-#' num.trees = 1000, importance = "permutation")
+#' if (requireNamespace("ranger", quietly = TRUE)) {
+#'   ensemble <- ranger::ranger(formula = mpg ~ ., data = training,
+#'     num.trees = 1000, importance = "permutation")
+#' }
 #'
 #' D = createDisMatrix(ensemble, data=training, label = "mpg",
 #'                                parallel = list(active=FALSE, no_cores = 1))

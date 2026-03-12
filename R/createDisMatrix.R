@@ -74,8 +74,10 @@ utils::globalVariables(c("resp", "W", "data_XGB", "i"))
 #' importance=TRUE, proximity=TRUE)
 #'
 #' ## "ranger" package
-#' ensemble <- ranger::ranger(Species ~ ., data = iris,
-#' num.trees = 1000, importance = 'impurity')
+#' if (requireNamespace("ranger", quietly = TRUE)) {
+#'   ensemble <- ranger::ranger(Species ~ ., data = iris,
+#'     num.trees = 1000, importance = 'impurity')
+#' }
 #'
 #' # Compute dissimilarity matrix with optimizations
 #' D <- createDisMatrix(
