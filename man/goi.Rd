@@ -50,6 +50,35 @@ Zero values in the ensemble matrix O are treated as missing (NA) and
 excluded from the computation.
 }
 \examples{
+\donttest{
+# Example
+
+data(iris)
+smp_size <- floor(0.75 * nrow(iris))
+set.seed(42)
+train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+training <- iris[train_ind, ]
+
+ensemble <- randomForest::randomForest(Species ~ ., data = training,
+  importance = TRUE, proximity = TRUE)
+
+D <- createDisMatrix(ensemble, data = training, label = "Species",
+  parallel = list(active = FALSE, no_cores = 1))
+
+setting <- list(impTotal = 0.1, maxDec = 0.01, n = 2, level = 5)
+tree <- e2tree(Species ~ ., training, D, ensemble, setting)
+
+vs <- eValidation(training, tree, D)
+O  <- vs$Proximity_matrix_ensemble
+O_hat <- vs$Proximity_matrix_e2tree
+
+goi(O, O_hat)
+goi_perm(O, O_hat, alternative = "less", seed = 42)
+goi_analysis(O, O_hat, n_perm = 9999, seed = 42)
+
+plot(goi_perm(O, O_hat, n_perm = 9999, seed = 42))
+
+
 # Example with simulated data
 n <- 50
 O <- matrix(runif(n^2, 0.3, 1), n, n)
@@ -60,5 +89,8 @@ O_hat <- pmax(pmin(O_hat, 1), 0)
 diag(O_hat) <- 1
 
 goi(O, O_hat)
+
+
+}
 
 }

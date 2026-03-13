@@ -473,7 +473,7 @@ plot_e2tree_vis <- function(fit, data, ensemble,
     
     if (is_classification) {
       tooltip <- paste0(tooltip,
-                        "<tr><td style='padding: 3px 10px 3px 0;'><b>Purity:</b></td><td>", 
+                        "<tr><td style='padding: 3px 10px 3px 0;'><b>Accuracy:</b></td><td>", 
                         round(row$prob * 100, 1), "%</td></tr>"
       )
     }

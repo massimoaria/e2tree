@@ -30,7 +30,7 @@
 ## Internal changes
 
 - New `aaa_utils.R` with shared internal helpers: `e2_variance()`, `get_ensemble_type()`, `check_package()`.
-- Refactored `eComparison`, `eImpurity`, and `eStoppingRules` for consistency and performance.
+- Refactored `eValidation`, `eImpurity`, and `eStoppingRules` for consistency and performance.
 
 # e2tree 0.2.0
 

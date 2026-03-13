@@ -40,7 +40,7 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 #' setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 #' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 #'
-#' eComparison(training, tree, D)
+#' eValidation(training, tree, D)
 #'
 #'
 #' ## Regression
@@ -64,7 +64,7 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 #' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 #' tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
 #'
-#' eComparison(training, tree, D)
+#' eValidation(training, tree, D)
 #'
 #' }
 #'
@@ -73,7 +73,7 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 # Define a function to process heatmaps and perform Mantel test
 # The comparison is between the heatmap of the matrix O obtained from the RF output and the heatmap of the matrix O estimated by E2Tree
 
-eComparison <- function(data, fit, D, graph = TRUE) {
+eValidation <- function(data, fit, D, graph = TRUE) {
   # === Input Validation ===
 
   # Validate 'data'

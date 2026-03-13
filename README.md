@@ -294,7 +294,7 @@ a null distribution, comparing the observed statistic against values
 obtained under random reordering.
 
 ``` r
-eComparison(training, tree, D, graph = TRUE)
+eValidation(training, tree, D, graph = TRUE)
 ```
 
 <img src="man/figures/README-unnamed-chunk-19-1.png" alt="" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" alt="" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" alt="" width="100%" />

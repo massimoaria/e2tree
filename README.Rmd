@@ -231,6 +231,6 @@ To formally test this alignment, we use the [Mantel test](https://aacrjournals.o
 
 
 ```{r}
-eComparison(training, tree, D, graph = TRUE)
+eValidation(training, tree, D, graph = TRUE)
 ```
 
