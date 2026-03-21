@@ -2,31 +2,9 @@
 % Please edit documentation in R/loi.R
 \name{loi_perm}
 \alias{loi_perm}
-\alias{goi_perm}
-\alias{goi_analysis}
 \title{Permutation Test for LoI}
 \usage{
 loi_perm(O, O_hat, n_perm = 999, conf.level = 0.95, seed = NULL)
-
-goi_perm(
-  O,
-  O_hat,
-  n_perm = 999,
-  alternative = c("greater", "less", "two.sided"),
-  conf.level = 0.95,
-  graph = FALSE,
-  seed = NULL,
-  .silent = FALSE
-)
-
-goi_analysis(
-  O,
-  O_hat,
-  n_perm = 999,
-  conf.level = 0.95,
-  graph = FALSE,
-  seed = NULL
-)
 }
 \arguments{
 \item{O}{Proximity matrix from the ensemble model (n x n)}

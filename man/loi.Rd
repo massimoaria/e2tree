@@ -2,12 +2,9 @@
 % Please edit documentation in R/loi.R
 \name{loi}
 \alias{loi}
-\alias{goi}
 \title{Loss of Interpretability (LoI) Index}
 \usage{
 loi(O, O_hat, normalize = TRUE)
-
-goi(O, O_hat, sample = FALSE, seed = NULL)
 }
 \arguments{
 \item{O}{Proximity matrix from the ensemble model (n x n), values in \link{0,1}}

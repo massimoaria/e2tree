@@ -55,7 +55,7 @@ require(randomForest)
 require(ranger)
 require(dplyr)
 require(ggplot2)
-if (!(require(rsample, quietly=TRUE))){install.packages("rsample"); require(rsample, quietly=TRUE)} 
+if (!(require(rsample, quietly=TRUE))){install.packages("rsample"); require(rsample, quietly=TRUE)}
 options(dplyr.summarise.inform = FALSE)
 ```
 
@@ -137,25 +137,115 @@ Build an explainable tree for RF
 tree <- e2tree(Species ~ ., data = training, D, ensemble, setting)
 ```
 
-Plot the Explainable Ensemble Tree
+### S3 methods for e2tree objects
+
+The `e2tree` class supports standard S3 methods for inspecting the
+fitted model:
+
+**Print** — compact model overview:
 
 ``` r
-expl_plot <- rpart2Tree(tree, ensemble)
-
-# Plot using rpart.plot package:
-plot_e2tree <- rpart.plot::rpart.plot(expl_plot,
-                                      type=1,
-                                      fallen.leaves = T,
-                                      cex =0.55, 
-                                      branch.lty = 6,
-                                      nn = T, 
-                                      roundint=F, 
-                                      digits = 2,
-                                      box.palette="lightgrey" 
-                                      ) 
+print(tree)
+#> 
+#>   Explainable Ensemble Tree (E2Tree)
+#>   -----------------------------------
+#>   Task:            Classification
+#>   Response:        Species
+#>   Predictors:      4 (Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
+#>   Observations:    90
+#>   Nodes:           11 (total), 6 (terminal)
+#>   Max depth:       5
+#>   Split variables: Petal.Length, Petal.Width
+#>   Classes:         setosa, versicolor, virginica
 ```
 
-<img src="man/figures/README-unnamed-chunk-10-1.png" alt="" width="100%" />
+**Summary** — full model details including terminal nodes and decision
+rules:
+
+``` r
+summary(tree)
+#> 
+#> ====================================================================== 
+#>                     E2TREE MODEL SUMMARY
+#> ====================================================================== 
+#> 
+#> MODEL INFORMATION
+#> ---------------------------------------- 
+#>   Task:              Classification
+#>   Response:          Species
+#>   Observations:      90
+#>   Total Nodes:       11
+#>   Terminal Nodes:    6
+#>   Max Depth:         5
+#>   Split Variables:   Petal.Length, Petal.Width
+#>   Classes:           setosa, versicolor, virginica
+#> 
+#> 
+#> TERMINAL NODES
+#> ---------------------------------------------------------------------- 
+#>   Node      Prediction            n  Purity      Wt
+#> ------------------------------------------------------- 
+#>   2         setosa               33  100.0%     —
+#>   12        versicolor           22  100.0%     —
+#>   26        versicolor            2  100.0%     —
+#>   54        versicolor            2   50.0%     —
+#>   55        virginica             2  100.0%     —
+#>   7         virginica            29  100.0%     —
+#> 
+#> 
+#> DECISION RULES
+#> ---------------------------------------------------------------------- 
+#> 
+#> Rule 1 (Node 2, n=33):
+#>     IF   Petal.Length <=1.9
+#>   THEN: setosa
+#> 
+#> Rule 2 (Node 12, n=22):
+#>     IF   Petal.Length >1.9
+#>     AND  Petal.Width <=1.7
+#>     AND  Petal.Length <=4.7
+#>   THEN: versicolor
+#> 
+#> Rule 3 (Node 26, n=2):
+#>     IF   Petal.Length >1.9
+#>     AND  Petal.Width <=1.7
+#>     AND  Petal.Length >4.7
+#>     AND  Petal.Length <=5
+#>   THEN: versicolor
+#> 
+#> Rule 4 (Node 54, n=2):
+#>     IF   Petal.Length >1.9
+#>     AND  Petal.Width <=1.7
+#>     AND  Petal.Length >4.7
+#>     AND  Petal.Length >5
+#>     AND  Petal.Length <=5.1
+#>   THEN: versicolor
+#> 
+#> Rule 5 (Node 55, n=2):
+#>     IF   Petal.Length >1.9
+#>     AND  Petal.Width <=1.7
+#>     AND  Petal.Length >4.7
+#>     AND  Petal.Length >5
+#>     AND  Petal.Length >5.1
+#>   THEN: virginica
+#> 
+#> Rule 6 (Node 7, n=29):
+#>     IF   Petal.Length >1.9
+#>     AND  Petal.Width >1.7
+#>   THEN: virginica
+#> 
+#> ======================================================================
+```
+
+**Plot** — tree visualization via `rpart.plot`:
+
+``` r
+plot(tree, ensemble)
+```
+
+<img src="man/figures/README-unnamed-chunk-12-1.png" alt="" width="100%" />
+
+### Prediction
 
 Prediction with the new tree (example on training)
 
@@ -223,12 +313,12 @@ V
 #> $g_imp
 ```
 
-<img src="man/figures/README-unnamed-chunk-15-1.png" alt="" width="100%" />
+<img src="man/figures/README-unnamed-chunk-17-1.png" alt="" width="100%" />
 
     #> 
     #> $g_acc
 
-<img src="man/figures/README-unnamed-chunk-15-2.png" alt="" width="100%" />
+<img src="man/figures/README-unnamed-chunk-17-2.png" alt="" width="100%" />
 
 Comparison with the validation sample
 
@@ -266,44 +356,227 @@ table(pred_val$fit, response_validation)
 roc_res <- roc(response_validation, pred_val$score, target="virginica")
 ```
 
-<img src="man/figures/README-unnamed-chunk-18-1.png" alt="" width="100%" />
+<img src="man/figures/README-unnamed-chunk-20-1.png" alt="" width="100%" />
 
 ``` r
 roc_res$auc
 #> [1] 0.9325397
 ```
 
-To evaluate how well our tree captures the structure of the RF and
-replicates its classification, we introduce a procedure to measure the
-goodness of explainability. We start by visualizing the final partition
-generated by the RF through a heatmap — a graphical representation of
-the co-occurrence matrix, which reflects how often pairs of observations
-are grouped together across the ensemble. Each cell shows a pairwise
-similarity: the darker the cell, the closer to 1 the similarity —
-meaning the two observations were frequently assigned to the same leaf.
-Comparing these two matrices — both visually and statistically — allows
-us to assess how well E2Tree reproduces the ensemble structure. To
-formally test this alignment, we use the [Mantel
-test](https://aacrjournals.org/cancerres/article/27/2_Part_1/209/476508/The-Detection-of-Disease-Clustering-and-a),
-a statistical method that quantifies the correlation between the two
-matrices. The Mantel test is a non-parametric method used to assess the
-correlation between two distance or similarity matrices. It is
-particularly useful when we are interested in studying the relationships
-between dissimilarity structures. The test uses permutation to generate
-a null distribution, comparing the observed statistic against values
-obtained under random reordering.
+## Validation: Measuring Reconstruction Quality
+
+A critical question when using E2Tree is: *how well does the single tree
+capture the structure of the original ensemble?* This is a question of
+**agreement** (do the proximity values match?) rather than mere
+**association** (is the pattern correlated?).
+
+The `eValidation()` function provides a comprehensive validation
+framework that computes multiple divergence and similarity measures,
+each capturing a different aspect of reconstruction quality:
+
+| Measure | Type | Range | What it measures |
+|----|----|----|----|
+| **nLoI** | divergence | \[0, 1\] | Normalized Loss of Interpretability — weighted divergence with diagnostic decomposition |
+| **Hellinger** | divergence | \[0, 1\] | Hellinger distance — robust to sparse matrices |
+| **wRMSE** | divergence | \[0, 1\] | Weighted RMSE — emphasizes high-proximity regions |
+| **RV** | similarity | \[0, 1\] | RV coefficient — global structural similarity (scale-invariant) |
+| **SSIM** | similarity | \[-1, 1\] | Structural Similarity Index — captures local block patterns |
+
+All measures are tested simultaneously using a **unified row/column
+permutation test** with a single set of permutations.
+
+### Running the validation
 
 ``` r
-eValidation(training, tree, D, graph = TRUE)
+val <- eValidation(training, tree, D, graph = FALSE, n_perm = 999, seed = 42)
 ```
 
-<img src="man/figures/README-unnamed-chunk-19-1.png" alt="" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" alt="" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" alt="" width="100%" />
+**Print** — compact results table with all measures and permutation
+test:
 
-    #> $z.stat
-    #> [1] 1046.088
-    #> 
-    #> $p
-    #> [1] 0.001
-    #> 
-    #> $alternative
-    #> [1] "two.sided"
+``` r
+print(val)
+#> 
+#> ##############################################################################
+#>    E2Tree Validation
+#> ##############################################################################
+#> 
+#>   Matrix dimension:    90 x 90
+#>   Pairs:               4005
+#> 
+#>   Mantel test:         z = 1046.09, p = 0.0010
+#> 
+#> ------------------------------------------------------------------------------
+#>   Measure          Type        Observed    Null mean    Z-stat     p-value
+#> ------------------------------------------------------------------------------
+#>   nLoI           [div]     0.0480     0.4126     -56.63   0.0010 ** 
+#>   Hellinger      [div]     0.2154     0.6250     -81.19   0.0010 ** 
+#>   wRMSE          [div]     0.1700     0.8406    -142.36   0.0010 ** 
+#>   RV             [sim]     0.9674     0.3294     +57.04   0.0010 ** 
+#>   SSIM           [sim]     0.6420     0.0088    +116.47   0.0010 ** 
+#> ------------------------------------------------------------------------------
+#>   Permutations: 999 (row/column), conf.level: 95%
+#> 
+#>   LoI Decomposition:   within = 4.5%,  between = 95.5%
+#> 
+#> ##############################################################################
+#>   [div] = divergence (lower=better), [sim] = similarity (higher=better)
+#>   Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1
+```
+
+**Summary** — includes the LoI diagnostic decomposition:
+
+``` r
+summary(val)
+#> 
+#> ##############################################################################
+#>    E2Tree Validation
+#> ##############################################################################
+#> 
+#>   Matrix dimension:    90 x 90
+#>   Pairs:               4005
+#> 
+#>   Mantel test:         z = 1046.09, p = 0.0010
+#> 
+#> ------------------------------------------------------------------------------
+#>   Measure          Type        Observed    Null mean    Z-stat     p-value
+#> ------------------------------------------------------------------------------
+#>   nLoI           [div]     0.0480     0.4126     -56.63   0.0010 ** 
+#>   Hellinger      [div]     0.2154     0.6250     -81.19   0.0010 ** 
+#>   wRMSE          [div]     0.1700     0.8406    -142.36   0.0010 ** 
+#>   RV             [sim]     0.9674     0.3294     +57.04   0.0010 ** 
+#>   SSIM           [sim]     0.6420     0.0088    +116.47   0.0010 ** 
+#> ------------------------------------------------------------------------------
+#>   Permutations: 999 (row/column), conf.level: 95%
+#> 
+#>   LoI Decomposition:   within = 4.5%,  between = 95.5%
+#> 
+#> ##############################################################################
+#>   [div] = divergence (lower=better), [sim] = similarity (higher=better)
+#>   Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1
+#> 
+#> 
+#> 
+#> ##############################################################################
+#>    Loss of Interpretability (LoI) — Decomposition
+#> ##############################################################################
+#> 
+#>   nLoI (normalized):   0.0480
+#>   LoI (raw):           192.1100
+#>   n = 90, pairs = 4005
+#> 
+#> ------------------------------------------------------------------------------
+#>   Component                Value       Pairs      Proportion   Diagnosis
+#> ------------------------------------------------------------------------------
+#>   Within-node (LoI_in)     8.6039       1168        4.5%     
+#>   Between-node (LoI_out) 183.5062       2837       95.5%     <- dominant
+#> ------------------------------------------------------------------------------
+#> 
+#>   Interpretation: Partition loss dominates. The E2Tree is separating
+#>   observations that the ensemble considers similar. Consider increasing
+#>   the number of terminal nodes or relaxing pruning constraints.
+#> 
+#> ##############################################################################
+```
+
+**Plot** — heatmaps, null distribution, and LoI decomposition:
+
+``` r
+plot(val)
+```
+
+<img src="man/figures/README-unnamed-chunk-24-1.png" alt="" width="100%" />
+
+### The LoI Decomposition
+
+The key diagnostic feature of the nLoI is its **decomposability** into
+two components:
+
+- **LoI_in** (within-node): measures how well the E2Tree reproduces the
+  ensemble’s proximity values for pairs it groups *together*. A high
+  proportion indicates the partition is correct but within-node
+  calibration is off.
+
+- **LoI_out** (between-node): measures the cost of pairs the E2Tree
+  *separates* into different nodes. A high proportion indicates the tree
+  needs more terminal nodes.
+
+This decomposition is available directly from the `loi()` function:
+
+``` r
+O <- val$Proximity_matrix_ensemble
+O_hat <- val$Proximity_matrix_e2tree
+
+result <- loi(O, O_hat)
+summary(result)
+#> 
+#> ##############################################################################
+#>    Loss of Interpretability (LoI) — Decomposition
+#> ##############################################################################
+#> 
+#>   nLoI (normalized):   0.0480
+#>   LoI (raw):           192.1100
+#>   n = 90, pairs = 4005
+#> 
+#> ------------------------------------------------------------------------------
+#>   Component                Value       Pairs      Proportion   Diagnosis
+#> ------------------------------------------------------------------------------
+#>   Within-node (LoI_in)     8.6039       1168        4.5%     
+#>   Between-node (LoI_out) 183.5062       2837       95.5%     <- dominant
+#> ------------------------------------------------------------------------------
+#> 
+#>   Interpretation: Partition loss dominates. The E2Tree is separating
+#>   observations that the ensemble considers similar. Consider increasing
+#>   the number of terminal nodes or relaxing pruning constraints.
+#> 
+#> ##############################################################################
+```
+
+The decomposition provides actionable diagnostics:
+
+- If **LoI_out \> 70%**: increase tree complexity (more nodes, relaxed
+  pruning)
+- If **LoI_in \> 70%**: partition boundaries are adequate, but proximity
+  calibration needs improvement
+- If **balanced**: reconstruction is limited by the inherent
+  fuzzy-to-crisp structural transition
+
+### Standalone LoI permutation test
+
+For a standalone permutation test with detailed output:
+
+``` r
+perm <- loi_perm(O, O_hat, n_perm = 999, seed = 42)
+print(perm)
+#> 
+#> ==============================================================================
+#>    Permutation Test for Loss of Interpretability (LoI)
+#> ==============================================================================
+#> 
+#>   Observed nLoI:       0.0480
+#>   Null mean:           0.4128
+#>   Null SD:             0.0062
+#>   Z-statistic:         -58.5019
+#> 
+#> ------------------------------------------------------------------------------
+#>   Hypothesis Test (H1: nLoI < expected by chance)
+#> ------------------------------------------------------------------------------
+#>   p-value:             0.0010 **
+#>   95% CI:             [0.0399, 0.0646]
+#>   Permutations:        999 (row/column)
+#> 
+#> ------------------------------------------------------------------------------
+#>   Decomposition
+#> ------------------------------------------------------------------------------
+#>   LoI_in  (within):    8.6039  (  4.5% of total)
+#>   LoI_out (between):   183.5062  ( 95.5% of total)
+#> 
+#> ==============================================================================
+#>   Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1
+```
+
+``` r
+plot(perm)
+```
+
+<img src="man/figures/README-unnamed-chunk-27-1.png" alt="" width="100%" />
