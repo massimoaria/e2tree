@@ -348,7 +348,7 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
     wt_vals <- vapply(seq_len(nrow(info)), function(r) {
       indice <- unlist(info$obs[[r]])
       v <- 1 - (variance(response[indice]) / (maxvar * length(indice) / size))
-      max(v, 0)
+      min(max(v, 0), 1)
     }, numeric(1))
     info$Wt <- wt_vals
     info <- info %>% relocate(Wt, .after=prob)
@@ -362,7 +362,7 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   
   object$N <- N
   
-  class(object) <- c("list", "e2tree")
+  class(object) <- c("e2tree", "list")
   
   return(object)
 }

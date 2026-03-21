@@ -2,80 +2,73 @@
 % Please edit documentation in R/eValidation.R
 \name{eValidation}
 \alias{eValidation}
-\title{Comparison of Heatmaps and Mantel Test}
+\title{E2Tree Validation: Proximity Matrix Comparison}
 \usage{
-eValidation(data, fit, D, graph = TRUE)
+eValidation(
+  data,
+  fit,
+  D,
+  graph = TRUE,
+  n_perm = 999,
+  conf.level = 0.95,
+  seed = NULL
+)
 }
 \arguments{
-\item{data}{a data frame containing the variables in the model. It is the data frame used for ensemble learning.}
+\item{data}{A data frame containing the variables in the model.}
 
-\item{fit}{is e2tree object.}
+\item{fit}{An e2tree object.}
 
-\item{D}{is the dissimilarity matrix. This is a dissimilarity matrix measuring the discordance between two observations concerning a given classifier of a random forest model. The dissimilarity matrix is obtained with the \link{createDisMatrix} function.}
+\item{D}{The dissimilarity matrix obtained with \code{\link{createDisMatrix}}.}
 
-\item{graph}{A logical value (default: TRUE). If TRUE, heatmaps of both matrices are generated and displayed.}
+\item{graph}{Logical (default TRUE). If TRUE, heatmaps are displayed.}
+
+\item{n_perm}{Integer. Number of permutations for the unified permutation
+test. Default is 999. Set to 0 to skip permutation testing.}
+
+\item{conf.level}{Numeric. Confidence level for intervals. Default is 0.95.}
+
+\item{seed}{Integer or NULL. Random seed for reproducibility.}
 }
 \value{
-A list containing three elements:
-\itemize{
-\item \code{RF HeatMap}: A heatmap plot of the Random Forest-derived proximity matrix.
-\item \code{E2Tree HeatMap}: A heatmap plot of the E2Tree-estimated matrix.
-\item \code{Mantel Test}: Results of the Mantel test, including the correlation coefficient and significance level.
+An object of class \code{"eValidation"} containing:
+\describe{
+\item{Proximity_matrix_ensemble}{Ensemble proximity matrix (reordered)}
+\item{Proximity_matrix_e2tree}{E2Tree proximity matrix (reordered)}
+\item{mantel_test}{Mantel test result}
+\item{loi}{LoI object with decomposition (see \code{\link{loi}})}
+\item{measures}{Data frame with all measures: nLoI, Hellinger, wRMSE, RV, SSIM}
+\item{permutation}{Permutation test results for all measures (if n_perm > 0)}
 }
 }
 \description{
-This function processes heatmaps for visual comparison and performs the Mantel test between a proximity matrix derived from Random Forest outputs and a matrix estimated
-by E2Tree. Heatmaps are generated for both matrices. The Mantel test quantifies the correlation between the matrices, offering a statistical measure of similarity.
+Compares the ensemble proximity matrix with the E2Tree-estimated proximity
+matrix using multiple divergence and similarity measures. Performs the Mantel
+test and computes the Loss of Interpretability (LoI) with its diagnostic
+decomposition, plus Hellinger distance, weighted RMSE, RV coefficient, and
+SSIM.
 }
 \examples{
 \donttest{
 ## Classification:
 data(iris)
-
-# Create training and validation set:
 smp_size <- floor(0.75 * nrow(iris))
 train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
 training <- iris[train_ind, ]
-validation <- iris[-train_ind, ]
-response_training <- training[,5]
-response_validation <- validation[,5]
 
-# Perform training:
 ensemble <- randomForest::randomForest(Species ~ ., data=training,
-importance=TRUE, proximity=TRUE)
+  importance=TRUE, proximity=TRUE)
 
 D <- createDisMatrix(ensemble, data=training, label = "Species",
-                          parallel = list(active=FALSE, no_cores = 1))
+  parallel = list(active=FALSE, no_cores = 1))
 
-setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
+setting <- list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 
-eValidation(training, tree, D)
-
-
-## Regression
-data("mtcars")
-
-# Create training and validation set:
-smp_size <- floor(0.75 * nrow(mtcars))
-train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
-training <- mtcars[train_ind, ]
-validation <- mtcars[-train_ind, ]
-response_training <- training[,1]
-response_validation <- validation[,1]
-
-# Perform training
-ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000,
-importance=TRUE, proximity=TRUE)
-
-D = createDisMatrix(ensemble, data=training, label = "mpg",
-                          parallel = list(active=FALSE, no_cores = 1))
-
-setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
-tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
-
-eValidation(training, tree, D)
-
+val <- eValidation(training, tree, D, n_perm = 199)
+print(val)
+summary(val)
+plot(val)
 }
 
 }
