@@ -18,8 +18,8 @@
 #'   \item \strong{LoI_in}: within-node loss (pairs grouped together by E2Tree)
 #'   \item \strong{LoI_out}: between-node loss (pairs separated by E2Tree)
 #' }
-#' The ratio \eqn{\pi_{\mathrm{out}} = \mathrm{LoI}_{\mathrm{out}} / \mathrm{LoI}}
-#' indicates what fraction of the total loss is due to the partition itself.
+#' The per-pair averages \code{mean_in} and \code{mean_out} enable direct
+#' comparison between the two components despite their different pair counts.
 #'
 #' @param O Proximity matrix from the ensemble model (n x n), values in [0,1]
 #' @param O_hat Proximity matrix estimated by E2Tree (n x n), values in [0,1]
@@ -29,10 +29,10 @@
 #' @return An object of class \code{"loi"} containing:
 #'   \item{loi}{Raw LoI value (unnormalized)}
 #'   \item{nloi}{Normalized LoI (LoI / M)}
-#'   \item{loi_in}{Within-node component}
-#'   \item{loi_out}{Between-node component}
-#'   \item{pi_in}{Proportion of loss from within-node discrepancy}
-#'   \item{pi_out}{Proportion of loss from between-node separation}
+#'   \item{loi_in}{Within-node component (total)}
+#'   \item{loi_out}{Between-node component (total)}
+#'   \item{mean_in}{Per-pair average within-node loss (comparable with mean_out)}
+#'   \item{mean_out}{Per-pair average between-node loss (comparable with mean_in)}
 #'   \item{n}{Matrix dimension}
 #'   \item{m}{Number of unique pairs}
 #'   \item{n_within}{Number of within-node pairs}
@@ -43,15 +43,15 @@
 #' contribution is weighted by the maximum of the two proximity values.
 #' This gives more weight to discrepancies in high-proximity regions.
 #'
-#' \strong{Decomposition interpretation:}
+#' \strong{Decomposition interpretation (per-pair averages):}
 #' \itemize{
-#'   \item High \eqn{\pi_{\mathrm{out}}} (> 0.7): the tree needs more terminal
-#'     nodes or different split criteria --- it is separating observations that
-#'     the ensemble considers similar.
-#'   \item High \eqn{\pi_{\mathrm{in}}} (> 0.7): the partition boundaries are
-#'     well-placed, but within-node proximity calibration needs improvement.
-#'   \item Balanced: the reconstruction is limited by the inherent tension
-#'     between the fuzzy ensemble and the crisp E2Tree structure.
+#'   \item \code{mean_out}: average ensemble proximity lost by the partition.
+#'     Low values (< 0.1) indicate the tree correctly separates low-proximity
+#'     pairs. High values (> 0.3) suggest the tree splits apart pairs that
+#'     the ensemble considers similar — more terminal nodes may help.
+#'   \item \code{mean_in}: average calibration error within nodes. Low values
+#'     (< 0.01) indicate excellent within-node reconstruction. Higher values
+#'     reflect the inherent fuzzy-to-crisp transition.
 #' }
 #'
 #' @examples
@@ -140,33 +140,32 @@ loi <- function(O, O_hat, normalize = TRUE) {
   # Total
   loi_total <- loi_in + loi_out
 
-  # Proportions
-  if (loi_total > 0) {
-    pi_in <- loi_in / loi_total
-    pi_out <- loi_out / loi_total
-  } else {
-    pi_in <- 0
-    pi_out <- 0
-  }
-
   # Normalized
   nloi <- loi_total / m
+
+  # Counts
+  n_within <- sum(is_within)
+  n_between <- sum(is_between)
+
+  # Per-pair averages (comparable across components)
+  mean_in  <- if (n_within > 0)  loi_in  / n_within  else 0
+  mean_out <- if (n_between > 0) loi_out / n_between else 0
 
   # -------------------------------------------------------------------------
   # BUILD RESULT OBJECT
   # -------------------------------------------------------------------------
 
   result <- list(
-    loi      = loi_total,
-    nloi     = nloi,
-    loi_in   = loi_in,
-    loi_out  = loi_out,
-    pi_in    = pi_in,
-    pi_out   = pi_out,
-    n        = n,
-    m        = m,
-    n_within  = sum(is_within),
-    n_between = sum(is_between)
+    loi       = loi_total,
+    nloi      = nloi,
+    loi_in    = loi_in,
+    loi_out   = loi_out,
+    mean_in   = mean_in,
+    mean_out  = mean_out,
+    n         = n,
+    m         = m,
+    n_within  = n_within,
+    n_between = n_between
   )
   class(result) <- "loi"
   result
@@ -210,40 +209,45 @@ summary.loi <- function(object, digits = 4, ...) {
 
   cat(sprintf("  nLoI (normalized):   %.*f\n", digits, x$nloi))
   cat(sprintf("  LoI (raw):           %.*f\n", digits, x$loi))
-  cat(sprintf("  n = %d, pairs = %d\n\n", x$n, x$m))
+  cat(sprintf("  n = %d, pairs = %d (within: %d, between: %d)\n\n",
+              x$n, x$m, x$n_within, x$n_between))
 
   cat("------------------------------------------------------------------------------\n")
-  cat("  Component                Value       Pairs      Proportion   Diagnosis\n")
+  cat("  Component              Total       Pairs     Mean/pair\n")
   cat("------------------------------------------------------------------------------\n")
 
-  # Determine diagnosis
-  diag_in <- ""
-  diag_out <- ""
-  if (x$pi_out > 0.7) {
-    diag_out <- "<- dominant"
-  } else if (x$pi_in > 0.7) {
-    diag_in <- "<- dominant"
-  }
-
-  cat(sprintf("  Within-node (LoI_in)   %8.*f   %8d   %8.1f%%     %s\n",
-              digits, x$loi_in, x$n_within, x$pi_in * 100, diag_in))
-  cat(sprintf("  Between-node (LoI_out) %8.*f   %8d   %8.1f%%     %s\n",
-              digits, x$loi_out, x$n_between, x$pi_out * 100, diag_out))
+  cat(sprintf("  Within-node (LoI_in)  %8.*f   %8d     %.*f\n",
+              digits, x$loi_in, x$n_within, 6, x$mean_in))
+  cat(sprintf("  Between-node (LoI_out)%8.*f   %8d     %.*f\n",
+              digits, x$loi_out, x$n_between, 6, x$mean_out))
 
   cat("------------------------------------------------------------------------------\n\n")
 
-  if (x$pi_out > 0.7) {
-    cat("  Interpretation: Partition loss dominates. The E2Tree is separating\n")
-    cat("  observations that the ensemble considers similar. Consider increasing\n")
-    cat("  the number of terminal nodes or relaxing pruning constraints.\n\n")
-  } else if (x$pi_in > 0.7) {
-    cat("  Interpretation: Calibration loss dominates. The E2Tree's partition\n")
-    cat("  boundaries are well-placed, but within-node proximity values differ\n")
-    cat("  from the ensemble's. This is typical of the fuzzy-to-crisp transition.\n\n")
+  cat("  Per-pair interpretation (comparable across components):\n\n")
+
+  cat(sprintf("    mean_in  = %.6f  (avg calibration error within nodes)\n", x$mean_in))
+  cat(sprintf("    mean_out = %.6f  (avg ensemble proximity lost by separation)\n\n", x$mean_out))
+
+  if (x$mean_out > 0.3) {
+    cat("  Diagnostic: HIGH mean_out (> 0.3). The E2Tree is separating pairs\n")
+    cat("  with substantial ensemble proximity. Consider more terminal nodes.\n\n")
+  } else if (x$mean_out > 0.1) {
+    cat("  Diagnostic: MODERATE mean_out. Some ensemble proximity is lost by\n")
+    cat("  the partition, but most separated pairs have low ensemble proximity.\n\n")
   } else {
-    cat("  Interpretation: Loss is balanced between partition and calibration\n")
-    cat("  components. The reconstruction is limited by the inherent structural\n")
-    cat("  difference between the fuzzy ensemble and the crisp E2Tree.\n\n")
+    cat("  Diagnostic: LOW mean_out. The partition correctly separates pairs\n")
+    cat("  that have low ensemble proximity — the tree structure is well-placed.\n\n")
+  }
+
+  if (x$mean_in > 0.1) {
+    cat("  Diagnostic: HIGH mean_in (> 0.1). Within-node proximity values\n")
+    cat("  differ substantially from the ensemble. Check within-node calibration.\n\n")
+  } else if (x$mean_in > 0.01) {
+    cat("  Diagnostic: MODERATE mean_in. Some within-node calibration error,\n")
+    cat("  typical of the fuzzy-to-crisp structural transition.\n\n")
+  } else {
+    cat("  Diagnostic: LOW mean_in. Within-node proximity values closely\n")
+    cat("  match the ensemble — excellent calibration.\n\n")
   }
 
   cat("##############################################################################\n\n")
@@ -265,29 +269,29 @@ plot.loi <- function(x, ...) {
 
   par(mfrow = c(1, 2), mar = c(5, 4, 4, 2) + 0.1)
 
-  # Panel 1: Decomposition bar chart
-  vals <- c(x$loi_in, x$loi_out)
-  pcts <- c(x$pi_in, x$pi_out) * 100
-  nms <- c("Within-node\n(LoI_in)", "Between-node\n(LoI_out)")
   cols <- c("#3498db", "#e74c3c")
 
-  bp <- barplot(vals, names.arg = nms, col = cols, border = NA,
-                main = "LoI Decomposition",
-                ylab = "LoI value", ylim = c(0, max(vals) * 1.25))
-  text(bp, vals, labels = sprintf("%.1f%%", pcts),
+  # Panel 1: Per-pair average loss (comparable)
+  means <- c(x$mean_in, x$mean_out)
+  nms <- c("Within-node\n(mean_in)", "Between-node\n(mean_out)")
+
+  bp <- barplot(means, names.arg = nms, col = cols, border = NA,
+                main = sprintf("LoI Per-Pair Average Loss\nnLoI = %.4f", x$nloi),
+                ylab = "Mean loss per pair",
+                ylim = c(0, max(means) * 1.35))
+  text(bp, means, labels = sprintf("%.4f", means),
        pos = 3, cex = 0.9, font = 2)
 
-  # Panel 2: Proportion pie chart
-  if (x$loi > 0) {
-    pie(c(x$pi_in, x$pi_out),
-        labels = sprintf("%s\n%.1f%%", c("Within (LoI_in)", "Between (LoI_out)"),
-                         c(x$pi_in, x$pi_out) * 100),
-        col = cols, border = NA,
-        main = sprintf("Partition Loss Ratio\nnLoI = %.4f", x$nloi))
-  } else {
-    plot.new()
-    text(0.5, 0.5, "Perfect reconstruction\nnLoI = 0", cex = 1.5)
-  }
+  # Panel 2: Pair counts
+  counts <- c(x$n_within, x$n_between)
+  nms2 <- c("Within-node", "Between-node")
+
+  bp2 <- barplot(counts, names.arg = nms2, col = cols, border = NA,
+                 main = "Number of Pairs",
+                 ylab = "Count",
+                 ylim = c(0, max(counts) * 1.25))
+  text(bp2, counts, labels = counts,
+       pos = 3, cex = 0.9, font = 2)
 }
 
 
@@ -477,14 +481,14 @@ print.loi_perm <- function(x, digits = 4, ...) {
   cat(sprintf("  Permutations:        %d (row/column)\n", x$n_perm))
 
   cat("\n------------------------------------------------------------------------------\n")
-  cat("  Decomposition\n")
+  cat("  Decomposition (per-pair averages)\n")
   cat("------------------------------------------------------------------------------\n")
 
   obs <- x$observed
-  cat(sprintf("  LoI_in  (within):    %.*f  (%5.1f%% of total)\n",
-              digits, obs$loi_in, obs$pi_in * 100))
-  cat(sprintf("  LoI_out (between):   %.*f  (%5.1f%% of total)\n",
-              digits, obs$loi_out, obs$pi_out * 100))
+  cat(sprintf("  mean_in  (within):   %.*f  (n_pairs = %d)\n",
+              6, obs$mean_in, obs$n_within))
+  cat(sprintf("  mean_out (between):  %.*f  (n_pairs = %d)\n",
+              6, obs$mean_out, obs$n_between))
 
   cat("\n==============================================================================\n")
   cat("  Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1\n\n")
@@ -558,17 +562,17 @@ plot.loi_perm <- function(x, ...) {
          lwd = c(2, 2, 1.5, NA),
          bty = "n", cex = 0.85)
 
-  # --- Panel 2: Decomposition ---
+  # --- Panel 2: Per-pair decomposition ---
 
   obs <- x$observed
-  vals <- c(obs$loi_in, obs$loi_out)
-  pcts <- c(obs$pi_in, obs$pi_out) * 100
-  nms <- c("Within-node\n(LoI_in)", "Between-node\n(LoI_out)")
+  means <- c(obs$mean_in, obs$mean_out)
+  nms <- c("Within-node\n(mean_in)", "Between-node\n(mean_out)")
   cols <- c("#3498db", "#e74c3c")
 
-  bp <- barplot(vals, names.arg = nms, col = cols, border = NA,
-                main = sprintf("LoI Decomposition\nnLoI = %.4f", obs$nloi),
-                ylab = "LoI value", ylim = c(0, max(vals) * 1.3))
-  text(bp, vals, labels = sprintf("%.1f%%", pcts),
+  bp <- barplot(means, names.arg = nms, col = cols, border = NA,
+                main = sprintf("Per-Pair Average Loss\nnLoI = %.4f", obs$nloi),
+                ylab = "Mean loss per pair",
+                ylim = c(0, max(means) * 1.35))
+  text(bp, means, labels = sprintf("%.4f", means),
        pos = 3, cex = 0.9, font = 2)
 }

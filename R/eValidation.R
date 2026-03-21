@@ -405,8 +405,8 @@ print.eValidation <- function(x, digits = 4, ...) {
 
   # LoI decomposition summary
   lo <- x$loi
-  cat(sprintf("\n  LoI Decomposition:   within = %.1f%%,  between = %.1f%%\n",
-              lo$pi_in * 100, lo$pi_out * 100))
+  cat(sprintf("\n  LoI Decomposition (per-pair avg):  mean_in = %.6f,  mean_out = %.6f\n",
+              lo$mean_in, lo$mean_out))
 
   cat("\n##############################################################################\n")
   cat("  [div] = divergence (lower=better), [sim] = similarity (higher=better)\n")
@@ -493,17 +493,17 @@ plot.eValidation <- function(x, ...) {
            bty = "n", cex = 0.85)
   }
 
-  # --- Panel 3/4: LoI Decomposition ---
+  # --- Panel 3/4: LoI Decomposition (per-pair) ---
   lo <- x$loi
-  vals <- c(lo$loi_in, lo$loi_out)
-  pcts <- c(lo$pi_in, lo$pi_out) * 100
-  nms <- c("Within\n(LoI_in)", "Between\n(LoI_out)")
+  means <- c(lo$mean_in, lo$mean_out)
+  nms <- c("Within\n(mean_in)", "Between\n(mean_out)")
   cols <- c("#3498db", "#e74c3c")
 
-  bp <- barplot(vals, names.arg = nms, col = cols, border = NA,
-                main = sprintf("LoI Decomposition\nnLoI = %.4f", lo$nloi),
-                ylab = "LoI value", ylim = c(0, max(vals) * 1.3))
-  text(bp, vals, labels = sprintf("%.1f%%", pcts),
+  bp <- barplot(means, names.arg = nms, col = cols, border = NA,
+                main = sprintf("Per-Pair Average Loss\nnLoI = %.4f", lo$nloi),
+                ylab = "Mean loss per pair",
+                ylim = c(0, max(means) * 1.35))
+  text(bp, means, labels = sprintf("%.4f", means),
        pos = 3, cex = 0.9, font = 2)
 }
 

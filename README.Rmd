@@ -275,11 +275,11 @@ plot(val)
 
 The key diagnostic feature of the nLoI is its **decomposability** into two components:
 
-- **LoI_in** (within-node): measures how well the E2Tree reproduces the ensemble's proximity values for pairs it groups *together*. A high proportion indicates the partition is correct but within-node calibration is off.
+- **LoI_in** (within-node): measures how well the E2Tree reproduces the ensemble's proximity values for pairs it groups *together*.
 
-- **LoI_out** (between-node): measures the cost of pairs the E2Tree *separates* into different nodes. A high proportion indicates the tree needs more terminal nodes.
+- **LoI_out** (between-node): measures the ensemble proximity lost for pairs that E2Tree *separates* into different nodes.
 
-This decomposition is available directly from the `loi()` function:
+Since the number of within-node and between-node pairs can differ dramatically (between-node pairs typically outnumber within-node pairs by a large factor), the raw totals are **not directly comparable**. The `loi()` function reports **per-pair averages** (`mean_in` and `mean_out`) that enable meaningful comparison:
 
 ```{r}
 O <- val$Proximity_matrix_ensemble
@@ -289,11 +289,12 @@ result <- loi(O, O_hat)
 summary(result)
 ```
 
-The decomposition provides actionable diagnostics:
+The per-pair averages provide actionable diagnostics:
 
-- If **LoI_out > 70%**: increase tree complexity (more nodes, relaxed pruning)
-- If **LoI_in > 70%**: partition boundaries are adequate, but proximity calibration needs improvement
-- If **balanced**: reconstruction is limited by the inherent fuzzy-to-crisp structural transition
+- **mean_out > 0.3**: the tree is splitting apart pairs with substantial ensemble proximity — consider more terminal nodes
+- **mean_out < 0.1**: the partition correctly separates low-proximity pairs — tree structure is well-placed
+- **mean_in > 0.1**: within-node calibration error is high — check proximity estimation
+- **mean_in < 0.01**: excellent within-node match between E2Tree and ensemble
 
 
 ### Standalone LoI permutation test

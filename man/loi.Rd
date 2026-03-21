@@ -18,10 +18,10 @@ If FALSE, returns raw LoI.}
 An object of class \code{"loi"} containing:
 \item{loi}{Raw LoI value (unnormalized)}
 \item{nloi}{Normalized LoI (LoI / M)}
-\item{loi_in}{Within-node component}
-\item{loi_out}{Between-node component}
-\item{pi_in}{Proportion of loss from within-node discrepancy}
-\item{pi_out}{Proportion of loss from between-node separation}
+\item{loi_in}{Within-node component (total)}
+\item{loi_out}{Between-node component (total)}
+\item{mean_in}{Per-pair average within-node loss (comparable with mean_out)}
+\item{mean_out}{Per-pair average between-node loss (comparable with mean_in)}
 \item{n}{Matrix dimension}
 \item{m}{Number of unique pairs}
 \item{n_within}{Number of within-node pairs}
@@ -47,22 +47,22 @@ The LoI decomposes into two components:
 \item \strong{LoI_in}: within-node loss (pairs grouped together by E2Tree)
 \item \strong{LoI_out}: between-node loss (pairs separated by E2Tree)
 }
-The ratio \eqn{\pi_{\mathrm{out}} = \mathrm{LoI}_{\mathrm{out}} / \mathrm{LoI}}
-indicates what fraction of the total loss is due to the partition itself.
+The per-pair averages \code{mean_in} and \code{mean_out} enable direct
+comparison between the two components despite their different pair counts.
 
 The statistic uses a normalized squared difference, where each cell's
 contribution is weighted by the maximum of the two proximity values.
 This gives more weight to discrepancies in high-proximity regions.
 
-\strong{Decomposition interpretation:}
+\strong{Decomposition interpretation (per-pair averages):}
 \itemize{
-\item High \eqn{\pi_{\mathrm{out}}} (> 0.7): the tree needs more terminal
-nodes or different split criteria --- it is separating observations that
-the ensemble considers similar.
-\item High \eqn{\pi_{\mathrm{in}}} (> 0.7): the partition boundaries are
-well-placed, but within-node proximity calibration needs improvement.
-\item Balanced: the reconstruction is limited by the inherent tension
-between the fuzzy ensemble and the crisp E2Tree structure.
+\item \code{mean_out}: average ensemble proximity lost by the partition.
+Low values (< 0.1) indicate the tree correctly separates low-proximity
+pairs. High values (> 0.3) suggest the tree splits apart pairs that
+the ensemble considers similar — more terminal nodes may help.
+\item \code{mean_in}: average calibration error within nodes. Low values
+(< 0.01) indicate excellent within-node reconstruction. Higher values
+reflect the inherent fuzzy-to-crisp transition.
 }
 }
 \examples{

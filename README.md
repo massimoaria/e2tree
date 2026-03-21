@@ -417,7 +417,7 @@ print(val)
 #> ------------------------------------------------------------------------------
 #>   Permutations: 999 (row/column), conf.level: 95%
 #> 
-#>   LoI Decomposition:   within = 4.5%,  between = 95.5%
+#>   LoI Decomposition (per-pair avg):  mean_in = 0.007366,  mean_out = 0.064683
 #> 
 #> ##############################################################################
 #>   [div] = divergence (lower=better), [sim] = similarity (higher=better)
@@ -449,7 +449,7 @@ summary(val)
 #> ------------------------------------------------------------------------------
 #>   Permutations: 999 (row/column), conf.level: 95%
 #> 
-#>   LoI Decomposition:   within = 4.5%,  between = 95.5%
+#>   LoI Decomposition (per-pair avg):  mean_in = 0.007366,  mean_out = 0.064683
 #> 
 #> ##############################################################################
 #>   [div] = divergence (lower=better), [sim] = similarity (higher=better)
@@ -463,18 +463,25 @@ summary(val)
 #> 
 #>   nLoI (normalized):   0.0480
 #>   LoI (raw):           192.1100
-#>   n = 90, pairs = 4005
+#>   n = 90, pairs = 4005 (within: 1168, between: 2837)
 #> 
 #> ------------------------------------------------------------------------------
-#>   Component                Value       Pairs      Proportion   Diagnosis
+#>   Component              Total       Pairs     Mean/pair
 #> ------------------------------------------------------------------------------
-#>   Within-node (LoI_in)     8.6039       1168        4.5%     
-#>   Between-node (LoI_out) 183.5062       2837       95.5%     <- dominant
+#>   Within-node (LoI_in)    8.6039       1168     0.007366
+#>   Between-node (LoI_out)183.5062       2837     0.064683
 #> ------------------------------------------------------------------------------
 #> 
-#>   Interpretation: Partition loss dominates. The E2Tree is separating
-#>   observations that the ensemble considers similar. Consider increasing
-#>   the number of terminal nodes or relaxing pruning constraints.
+#>   Per-pair interpretation (comparable across components):
+#> 
+#>     mean_in  = 0.007366  (avg calibration error within nodes)
+#>     mean_out = 0.064683  (avg ensemble proximity lost by separation)
+#> 
+#>   Diagnostic: LOW mean_out. The partition correctly separates pairs
+#>   that have low ensemble proximity — the tree structure is well-placed.
+#> 
+#>   Diagnostic: LOW mean_in. Within-node proximity values closely
+#>   match the ensemble — excellent calibration.
 #> 
 #> ##############################################################################
 ```
@@ -493,15 +500,16 @@ The key diagnostic feature of the nLoI is its **decomposability** into
 two components:
 
 - **LoI_in** (within-node): measures how well the E2Tree reproduces the
-  ensemble’s proximity values for pairs it groups *together*. A high
-  proportion indicates the partition is correct but within-node
-  calibration is off.
+  ensemble’s proximity values for pairs it groups *together*.
 
-- **LoI_out** (between-node): measures the cost of pairs the E2Tree
-  *separates* into different nodes. A high proportion indicates the tree
-  needs more terminal nodes.
+- **LoI_out** (between-node): measures the ensemble proximity lost for
+  pairs that E2Tree *separates* into different nodes.
 
-This decomposition is available directly from the `loi()` function:
+Since the number of within-node and between-node pairs can differ
+dramatically (between-node pairs typically outnumber within-node pairs
+by a large factor), the raw totals are **not directly comparable**. The
+`loi()` function reports **per-pair averages** (`mean_in` and
+`mean_out`) that enable meaningful comparison:
 
 ``` r
 O <- val$Proximity_matrix_ensemble
@@ -516,30 +524,39 @@ summary(result)
 #> 
 #>   nLoI (normalized):   0.0480
 #>   LoI (raw):           192.1100
-#>   n = 90, pairs = 4005
+#>   n = 90, pairs = 4005 (within: 1168, between: 2837)
 #> 
 #> ------------------------------------------------------------------------------
-#>   Component                Value       Pairs      Proportion   Diagnosis
+#>   Component              Total       Pairs     Mean/pair
 #> ------------------------------------------------------------------------------
-#>   Within-node (LoI_in)     8.6039       1168        4.5%     
-#>   Between-node (LoI_out) 183.5062       2837       95.5%     <- dominant
+#>   Within-node (LoI_in)    8.6039       1168     0.007366
+#>   Between-node (LoI_out)183.5062       2837     0.064683
 #> ------------------------------------------------------------------------------
 #> 
-#>   Interpretation: Partition loss dominates. The E2Tree is separating
-#>   observations that the ensemble considers similar. Consider increasing
-#>   the number of terminal nodes or relaxing pruning constraints.
+#>   Per-pair interpretation (comparable across components):
+#> 
+#>     mean_in  = 0.007366  (avg calibration error within nodes)
+#>     mean_out = 0.064683  (avg ensemble proximity lost by separation)
+#> 
+#>   Diagnostic: LOW mean_out. The partition correctly separates pairs
+#>   that have low ensemble proximity — the tree structure is well-placed.
+#> 
+#>   Diagnostic: LOW mean_in. Within-node proximity values closely
+#>   match the ensemble — excellent calibration.
 #> 
 #> ##############################################################################
 ```
 
-The decomposition provides actionable diagnostics:
+The per-pair averages provide actionable diagnostics:
 
-- If **LoI_out \> 70%**: increase tree complexity (more nodes, relaxed
-  pruning)
-- If **LoI_in \> 70%**: partition boundaries are adequate, but proximity
-  calibration needs improvement
-- If **balanced**: reconstruction is limited by the inherent
-  fuzzy-to-crisp structural transition
+- **mean_out \> 0.3**: the tree is splitting apart pairs with
+  substantial ensemble proximity — consider more terminal nodes
+- **mean_out \< 0.1**: the partition correctly separates low-proximity
+  pairs — tree structure is well-placed
+- **mean_in \> 0.1**: within-node calibration error is high — check
+  proximity estimation
+- **mean_in \< 0.01**: excellent within-node match between E2Tree and
+  ensemble
 
 ### Standalone LoI permutation test
 
@@ -566,10 +583,10 @@ print(perm)
 #>   Permutations:        999 (row/column)
 #> 
 #> ------------------------------------------------------------------------------
-#>   Decomposition
+#>   Decomposition (per-pair averages)
 #> ------------------------------------------------------------------------------
-#>   LoI_in  (within):    8.6039  (  4.5% of total)
-#>   LoI_out (between):   183.5062  ( 95.5% of total)
+#>   mean_in  (within):   0.007366  (n_pairs = 1168)
+#>   mean_out (between):  0.064683  (n_pairs = 2837)
 #> 
 #> ==============================================================================
 #>   Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1
