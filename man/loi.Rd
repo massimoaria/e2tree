@@ -7,9 +7,9 @@
 loi(O, O_hat, normalize = TRUE)
 }
 \arguments{
-\item{O}{Proximity matrix from the ensemble model (n x n), values in \link{0,1}}
+\item{O}{Proximity matrix from the ensemble model (n x n), values in the interval 0 to 1}
 
-\item{O_hat}{Proximity matrix estimated by E2Tree (n x n), values in \link{0,1}}
+\item{O_hat}{Proximity matrix estimated by E2Tree (n x n), values in the interval 0 to 1}
 
 \item{normalize}{Logical. If TRUE (default), returns nLoI (divided by M).
 If FALSE, returns raw LoI.}
@@ -59,7 +59,7 @@ This gives more weight to discrepancies in high-proximity regions.
 \item \code{mean_out}: average ensemble proximity lost by the partition.
 Low values (< 0.1) indicate the tree correctly separates low-proximity
 pairs. High values (> 0.3) suggest the tree splits apart pairs that
-the ensemble considers similar — more terminal nodes may help.
+the ensemble considers similar --more terminal nodes may help.
 \item \code{mean_in}: average calibration error within nodes. Low values
 (< 0.01) indicate excellent within-node reconstruction. Higher values
 reflect the inherent fuzzy-to-crisp transition.

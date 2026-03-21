@@ -127,8 +127,8 @@ summary.e2tree <- function(object, ...) {
     cat(paste(rep("-", 55), collapse = ""), "\n")
     for (i in seq_len(nrow(terminal))) {
       nd <- terminal[i, ]
-      purity <- if (!is.null(nd$prob)) sprintf("%.1f%%", nd$prob * 100) else "—"
-      wt <- if (!is.null(nd$Wt)) sprintf("%.3f", nd$Wt) else "—"
+      purity <- if (!is.null(nd$prob)) sprintf("%.1f%%", nd$prob * 100) else "--"
+      wt <- if (!is.null(nd$Wt)) sprintf("%.3f", nd$Wt) else "--"
       cat(sprintf("  %-8d  %-15s  %6d  %6s  %6s\n",
                   nd$node, nd$pred, nd$n, purity, wt))
     }
@@ -138,7 +138,7 @@ summary.e2tree <- function(object, ...) {
     cat(paste(rep("-", 45), collapse = ""), "\n")
     for (i in seq_len(nrow(terminal))) {
       nd <- terminal[i, ]
-      wt <- if (!is.null(nd$Wt)) sprintf("%.3f", nd$Wt) else "—"
+      wt <- if (!is.null(nd$Wt)) sprintf("%.3f", nd$Wt) else "--"
       cat(sprintf("  %-8d  %-12s  %6d  %8s\n",
                   nd$node, format(nd$pred, digits = 4), nd$n, wt))
     }
@@ -170,7 +170,7 @@ summary.e2tree <- function(object, ...) {
         cat(sprintf("  %s %s\n", prefix, cond))
       }
     } else {
-      cat("  IF (root — all observations)\n")
+      cat("  IF (root -- all observations)\n")
     }
     cat(sprintf("  THEN: %s\n", nd$pred))
   }

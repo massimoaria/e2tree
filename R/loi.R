@@ -21,8 +21,8 @@
 #' The per-pair averages \code{mean_in} and \code{mean_out} enable direct
 #' comparison between the two components despite their different pair counts.
 #'
-#' @param O Proximity matrix from the ensemble model (n x n), values in [0,1]
-#' @param O_hat Proximity matrix estimated by E2Tree (n x n), values in [0,1]
+#' @param O Proximity matrix from the ensemble model (n x n), values in the interval 0 to 1
+#' @param O_hat Proximity matrix estimated by E2Tree (n x n), values in the interval 0 to 1
 #' @param normalize Logical. If TRUE (default), returns nLoI (divided by M).
 #'   If FALSE, returns raw LoI.
 #'
@@ -48,7 +48,7 @@
 #'   \item \code{mean_out}: average ensemble proximity lost by the partition.
 #'     Low values (< 0.1) indicate the tree correctly separates low-proximity
 #'     pairs. High values (> 0.3) suggest the tree splits apart pairs that
-#'     the ensemble considers similar — more terminal nodes may help.
+#'     the ensemble considers similar --more terminal nodes may help.
 #'   \item \code{mean_in}: average calibration error within nodes. Low values
 #'     (< 0.01) indicate excellent within-node reconstruction. Higher values
 #'     reflect the inherent fuzzy-to-crisp transition.
@@ -87,6 +87,7 @@
 #' plot(perm)
 #' }
 #'
+#' @importFrom graphics barplot layout text
 #' @export
 loi <- function(O, O_hat, normalize = TRUE) {
 
@@ -204,7 +205,7 @@ summary.loi <- function(object, digits = 4, ...) {
 
   cat("\n")
   cat("##############################################################################\n")
-  cat("   Loss of Interpretability (LoI) — Decomposition\n")
+  cat("   Loss of Interpretability (LoI) --Decomposition\n")
   cat("##############################################################################\n\n")
 
   cat(sprintf("  nLoI (normalized):   %.*f\n", digits, x$nloi))
@@ -236,7 +237,7 @@ summary.loi <- function(object, digits = 4, ...) {
     cat("  the partition, but most separated pairs have low ensemble proximity.\n\n")
   } else {
     cat("  Diagnostic: LOW mean_out. The partition correctly separates pairs\n")
-    cat("  that have low ensemble proximity — the tree structure is well-placed.\n\n")
+    cat("  that have low ensemble proximity --the tree structure is well-placed.\n\n")
   }
 
   if (x$mean_in > 0.1) {
@@ -247,7 +248,7 @@ summary.loi <- function(object, digits = 4, ...) {
     cat("  typical of the fuzzy-to-crisp structural transition.\n\n")
   } else {
     cat("  Diagnostic: LOW mean_in. Within-node proximity values closely\n")
-    cat("  match the ensemble — excellent calibration.\n\n")
+    cat("  match the ensemble --excellent calibration.\n\n")
   }
 
   cat("##############################################################################\n\n")
