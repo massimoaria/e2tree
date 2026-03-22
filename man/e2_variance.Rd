@@ -2,11 +2,11 @@
 % Please edit documentation in R/aaa_utils.R
 \name{e2_variance}
 \alias{e2_variance}
-\title{Population variance (divides by n, not n-1)}
+\title{Population Variance}
 \usage{
 e2_variance(x)
 }
 \description{
-Population variance (divides by n, not n-1)
+Population Variance
 }
 \keyword{internal}

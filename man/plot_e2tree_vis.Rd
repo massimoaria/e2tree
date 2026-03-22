@@ -90,15 +90,22 @@ Features: drag nodes anywhere, zoom, pan, click for details.
 Starts with hierarchical layout, then you can freely move nodes.
 }
 \examples{
-\dontrun{
-# Basic usage - hierarchical layout, horizontal drag only
+\donttest{
+data(iris)
+set.seed(42)
+smp_size <- floor(0.75 * nrow(iris))
+train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+training <- iris[train_ind, ]
+
+ensemble <- randomForest::randomForest(Species ~ ., data = training,
+  importance = TRUE, proximity = TRUE)
+D <- createDisMatrix(ensemble, data = training, label = "Species",
+  parallel = list(active = FALSE, no_cores = 1))
+setting <- list(impTotal = 0.1, maxDec = 0.01, n = 2, level = 5)
+tree <- e2tree(Species ~ ., training, D, ensemble, setting)
+
+# Basic usage
 plot_e2tree_vis(tree, training, ensemble)
-
-# Enable free dragging in all directions
-plot_e2tree_vis(tree, training, ensemble, free_drag = TRUE)
-
-# Split rule shown directly in the node
-plot_e2tree_vis(tree, training, ensemble, split_label_style = "innode")
 }
 
 }

@@ -38,12 +38,16 @@ Suggests:
     foreach,
     htmlwidgets,
     jsonlite,
+    knitr,
+    partykit,
     randomForest,
     ranger,
+    rmarkdown,
     rpart.plot,
     RSpectra,
     testthat (>= 3.0.0),
     visNetwork
+VignetteBuilder: knitr
 Config/testthat/edition: 3
-Depends: 
+Depends:
     R (>= 3.5)

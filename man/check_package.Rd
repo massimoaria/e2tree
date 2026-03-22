@@ -2,11 +2,11 @@
 % Please edit documentation in R/aaa_utils.R
 \name{check_package}
 \alias{check_package}
-\title{Check that required packages are available (for Suggests dependencies)}
+\title{Check Availability of Suggested Packages}
 \usage{
 check_package(pkg)
 }
 \description{
-Check that required packages are available (for Suggests dependencies)
+Check Availability of Suggested Packages
 }
 \keyword{internal}

@@ -25,12 +25,11 @@
 #' - Observations in the node (for terminal nodes)
 #'
 #' @examples
-#' \dontrun{
-#' # After creating an e2tree object
-#' plot_e2tree_click(tree, training, ensemble)
-#' 
-#' # Click on nodes to explore
-#' # Press ESC or right-click to exit
+#' \donttest{
+#' # After creating an e2tree object (requires interactive session)
+#' if (interactive()) {
+#'   plot_e2tree_click(tree, training, ensemble)
+#' }
 #' }
 #'
 #' @export

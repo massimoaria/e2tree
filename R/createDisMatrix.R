@@ -1,6 +1,6 @@
 utils::globalVariables(c("resp", "W", "data_XGB", "i"))
 
-#' Dissimilarity matrix - Optimized for Large Datasets
+#' Create a Dissimilarity Matrix from an Ensemble Model
 #'
 #' The function createDisMatrix creates a dissimilarity matrix among
 #' observations from an ensemble tree. This optimized version is designed

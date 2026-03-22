@@ -4,20 +4,28 @@
 \alias{vimp}
 \title{Variable Importance}
 \usage{
-vimp(fit, data, type = "classification")
+vimp(fit, data, type = NULL)
 }
 \arguments{
-\item{fit}{is a e2tree object}
+\item{fit}{An e2tree object.}
 
-\item{data}{is a data frame in which to interpret the variables named in the formula.}
+\item{data}{A data frame containing the variables in the model.}
 
-\item{type}{Specify the type. The default is ‘classification’, otherwise ‘regression’.}
+\item{type}{Character string: \code{"classification"} or \code{"regression"}.
+If \code{NULL} (default), the type is automatically detected from the
+e2tree object.}
 }
 \value{
-a data frame containing variable importance metrics.
+A list containing:
+\describe{
+\item{vimp}{A data frame with variable importance metrics.}
+\item{g_imp}{A ggplot bar chart of Mean Impurity Decrease.}
+\item{g_acc}{(Classification only) A ggplot bar chart of Mean Accuracy Decrease.}
+}
 }
 \description{
-It calculate variable importance of an explainable tree
+Computes variable importance for an E2Tree model based on mean
+impurity decrease and (for classification) mean accuracy decrease.
 }
 \examples{
 \donttest{
@@ -28,21 +36,20 @@ data(iris)
 smp_size <- floor(0.75 * nrow(iris))
 train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
 training <- iris[train_ind, ]
-validation <- iris[-train_ind, ]
-response_training <- training[,5]
-response_validation <- validation[,5]
 
 # Perform training:
-ensemble <- randomForest::randomForest(Species ~ ., data=training, 
+ensemble <- randomForest::randomForest(Species ~ ., data=training,
 importance=TRUE, proximity=TRUE)
 
-D <- createDisMatrix(ensemble, data=training, label = "Species", 
+D <- createDisMatrix(ensemble, data=training, label = "Species",
                              parallel = list(active=FALSE, no_cores = 1))
 
 setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 
-vimp(tree, training, type = "classification")
+vi <- vimp(tree, training)
+vi$vimp
+vi$g_imp
 
 
 ## Regression
@@ -52,21 +59,20 @@ data("mtcars")
 smp_size <- floor(0.75 * nrow(mtcars))
 train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
 training <- mtcars[train_ind, ]
-validation <- mtcars[-train_ind, ]
-response_training <- training[,1]
-response_validation <- validation[,1]
 
 # Perform training
-ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
+ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000,
 importance=TRUE, proximity=TRUE)
 
-D = createDisMatrix(ensemble, data=training, label = "mpg", 
-                         parallel = list(active=FALSE, no_cores = 1))  
+D = createDisMatrix(ensemble, data=training, label = "mpg",
+                         parallel = list(active=FALSE, no_cores = 1))
 
 setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
 
-vimp(tree, training, type = "regression")
+vi <- vimp(tree, training)
+vi$vimp
+vi$g_imp
 
 }
 

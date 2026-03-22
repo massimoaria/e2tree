@@ -2,7 +2,7 @@
 % Please edit documentation in R/aaa_utils.R
 \name{get_ensemble_type}
 \alias{get_ensemble_type}
-\title{Determine the ensemble type from a trained model}
+\title{Determine Ensemble Type from a Trained Model}
 \usage{
 get_ensemble_type(ensemble)
 }
@@ -13,6 +13,6 @@ get_ensemble_type(ensemble)
 Character string: "classification" or "regression"
 }
 \description{
-Determine the ensemble type from a trained model
+Determine Ensemble Type from a Trained Model
 }
 \keyword{internal}

@@ -1,4 +1,4 @@
-#' Roc curve
+#' ROC Curve
 #'
 #' Computes and plots the Receiver Operating Characteristic (ROC) curve for a binary classification model, 
 #' along with the Area Under the Curve (AUC). The ROC curve is a graphical representation of a classifier’s 

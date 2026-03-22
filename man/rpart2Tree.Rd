@@ -2,7 +2,7 @@
 % Please edit documentation in R/rpart2Tree.R
 \name{rpart2Tree}
 \alias{rpart2Tree}
-\title{Convert e2tree into an rpart object}
+\title{Convert an E2Tree Object to rpart Format}
 \usage{
 rpart2Tree(fit, ensemble)
 }
@@ -23,7 +23,11 @@ An rpart object. It contains the following components:
 \code{variable.importance}\tab   \tab Variable importance refers to a quantitative measure that assesses the contribution of individual variables within a predictive model towards accurate predictions. It quantifies the influence or impact that each variable has on the model's overall performance. Variable importance provides insights into the relative significance of different variables in explaining the observed outcomes and aids in understanding the underlying relationships and dynamics within the model \cr}
 }
 \description{
-It converts an e2tree output into an rpart object.
+Converts an e2tree output into an rpart object.
+}
+\details{
+Note: \code{\link{as.rpart.e2tree}} is the preferred coercion method.
+This function is kept for backward compatibility.
 }
 \examples{
 
@@ -56,46 +60,14 @@ D <- createDisMatrix(ensemble, data=training, label = "Species",
 setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 
-# Convert e2tree into an rpart object:
-expl_plot <- rpart2Tree(tree, ensemble)
+## Preferred coercion method:
+rpart_obj <- as.rpart(tree, ensemble)
+
+## Legacy function (see as.rpart):
+rpart_obj <- rpart2Tree(tree, ensemble)
 
 # Plot using rpart.plot package:
-rpart.plot::rpart.plot(expl_plot)
-
-
-## Regression
-data("mtcars")
-
-# Create training and validation set:
-smp_size <- floor(0.75 * nrow(mtcars))
-train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
-training <- mtcars[train_ind, ]
-validation <- mtcars[-train_ind, ]
-response_training <- training[,1]
-response_validation <- validation[,1]
-
-# Perform training
-## "randomForest" package
-ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
-importance=TRUE, proximity=TRUE)
-
-## "ranger" package
-if (requireNamespace("ranger", quietly = TRUE)) {
-  ensemble <- ranger::ranger(formula = mpg ~ ., data = training,
-    num.trees = 1000, importance = "permutation")
-}
-
-D = createDisMatrix(ensemble, data=training, label = "mpg",
-                       parallel = list(active=FALSE, no_cores = 1))
-
-setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
-tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
-
-# Convert e2tree into an rpart object:
-expl_plot <- rpart2Tree(tree, ensemble)
-
-# Plot using rpart.plot package:
-rpart.plot::rpart.plot(expl_plot)
+rpart.plot::rpart.plot(rpart_obj)
 
 }
 }

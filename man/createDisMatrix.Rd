@@ -2,7 +2,7 @@
 % Please edit documentation in R/createDisMatrix.R
 \name{createDisMatrix}
 \alias{createDisMatrix}
-\title{Dissimilarity matrix - Optimized for Large Datasets}
+\title{Create a Dissimilarity Matrix from an Ensemble Model}
 \usage{
 createDisMatrix(
   ensemble,

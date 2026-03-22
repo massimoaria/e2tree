@@ -1,0 +1,448 @@
+---
+title: "Introduction to e2tree: Explainable Ensemble Trees"
+author: "Massimo Aria, Agostino Gnasso"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to e2tree: Explainable Ensemble Trees}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Overview
+
+The **e2tree** package implements the Explainable Ensemble Tree (E2Tree)
+methodology, which constructs a single interpretable decision tree that
+approximates the predictions of an ensemble model (such as a random forest).
+The key idea is to use the dissimilarity structure induced by the ensemble
+to guide the construction of the tree, thereby preserving the predictive
+information encoded in the ensemble while providing a transparent,
+human-readable model.
+
+The methodology is described in:
+
+- Aria, M., Gnasso, A., Iorio, C., & Pandolfo, G. (2024). Explainable
+  ensemble trees. *Computational Statistics*, 39(1), 3--19.
+- Aria, M., Gnasso, A., Iorio, C., & Fokkema, M. (2026). Extending
+  Explainable Ensemble Trees to Regression Contexts. *Applied Stochastic
+  Models in Business and Industry*, 42(1), e70064.
+
+## Installation
+
+```{r eval = FALSE}
+# Install from CRAN (when available):
+install.packages("e2tree")
+
+# Or install the development version from GitHub:
+# devtools::install_github("massimoaria/e2tree")
+```
+
+## Workflow
+
+A typical e2tree analysis follows these steps:
+
+1. **Train an ensemble model** (random forest via `randomForest` or `ranger`)
+2. **Compute the dissimilarity matrix** from the ensemble using `createDisMatrix()`
+3. **Build the E2Tree** using `e2tree()`
+4. **Inspect and visualize** the tree (print, summary, plot)
+5. **Predict** on new data with `predict()`
+6. **Validate** the E2Tree structure with `eValidation()` and `loi()`
+
+## Classification Example
+
+We use the classic `iris` dataset to demonstrate a classification workflow.
+
+### Step 1: Prepare data and train ensemble
+
+```{r classification-setup}
+library(e2tree)
+
+data(iris)
+set.seed(42)
+smp_size <- floor(0.75 * nrow(iris))
+train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+training <- iris[train_ind, ]
+validation <- iris[-train_ind, ]
+```
+
+```{r classification-ensemble}
+library(randomForest)
+ensemble <- randomForest(Species ~ ., data = training,
+                         importance = TRUE, proximity = TRUE)
+ensemble
+```
+
+### Step 2: Compute dissimilarity matrix
+
+The ensemble induces a co-occurrence structure that captures how frequently
+pairs of observations fall into the same terminal nodes across the ensemble's
+trees. This structure is encoded in the co-occurrence matrix
+$\mathbf{O} = [o_{ij}]$, where each entry $o_{ij} \in [0, 1]$ reflects the
+weighted frequency with which observations $i$ and $j$ are grouped together.
+The corresponding dissimilarity matrix is $\mathbf{D} = \mathbf{1} - \mathbf{O}$.
+
+```{r classification-dismatrix}
+D <- createDisMatrix(ensemble, data = training, label = "Species",
+                     parallel = list(active = FALSE, no_cores = 1))
+dim(D)
+```
+
+### Step 3: Build the E2Tree
+
+The `e2tree()` function constructs a single tree that best represents the
+ensemble's dissimilarity structure. The `setting` argument controls the
+stopping rules:
+
+- `impTotal`: minimum impurity to attempt a split
+- `maxDec`: minimum decrease in impurity required
+- `n`: minimum number of observations in a node
+- `level`: maximum tree depth
+
+```{r classification-tree}
+setting <- list(impTotal = 0.1, maxDec = 0.01, n = 2, level = 5)
+tree <- e2tree(Species ~ ., training, D, ensemble, setting)
+```
+
+### Step 4: Inspect the tree
+
+```{r classification-print}
+print(tree)
+```
+
+```{r classification-summary}
+summary(tree)
+```
+
+The `nodes()` accessor extracts the tree structure as a data frame:
+
+```{r classification-nodes}
+# Terminal nodes only
+nodes(tree, terminal = TRUE)
+```
+
+### Step 5: Visualization
+
+The `plot()` method renders the tree using `rpart.plot`:
+
+```{r classification-plot, fig.width = 8, fig.height = 6}
+plot(tree, ensemble = ensemble, main = "E2Tree - Iris Classification")
+```
+
+You can also convert the tree to `rpart` or `partykit` formats for
+alternative visualizations:
+
+```{r classification-rpart, fig.width = 8, fig.height = 6}
+# Convert to rpart
+rpart_obj <- as.rpart(tree, ensemble)
+
+# Convert to partykit (if installed)
+if (requireNamespace("partykit", quietly = TRUE)) {
+  party_obj <- partykit::as.party(tree)
+  plot(party_obj)
+}
+```
+
+### Step 6: Prediction
+
+Use the standard `predict()` method on new data:
+
+```{r classification-predict}
+pred <- predict(tree, newdata = validation)
+head(pred)
+```
+
+Fitted values for the training data:
+
+```{r classification-fitted}
+head(fitted(tree))
+```
+
+### Step 7: Variable importance
+
+```{r classification-vimp}
+vi <- vimp(tree, data = training)
+vi$vimp
+vi$g_imp
+```
+
+## Regression Example
+
+The same workflow applies to regression problems. Here we use the `mtcars` dataset.
+
+```{r regression-setup}
+data(mtcars)
+set.seed(123)
+smp_size <- floor(0.75 * nrow(mtcars))
+train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
+training_reg <- mtcars[train_ind, ]
+validation_reg <- mtcars[-train_ind, ]
+```
+
+```{r regression-ensemble}
+ensemble_reg <- randomForest(mpg ~ ., data = training_reg, ntree = 500,
+                             importance = TRUE, proximity = TRUE)
+```
+
+```{r regression-dismatrix}
+D_reg <- createDisMatrix(ensemble_reg, data = training_reg, label = "mpg",
+                         parallel = list(active = FALSE, no_cores = 1))
+```
+
+```{r regression-tree}
+setting_reg <- list(impTotal = 0.1, maxDec = 1e-6, n = 2, level = 5)
+tree_reg <- e2tree(mpg ~ ., training_reg, D_reg, ensemble_reg, setting_reg)
+print(tree_reg)
+```
+
+```{r regression-plot, fig.width = 8, fig.height = 6}
+plot(tree_reg, ensemble = ensemble_reg, main = "E2Tree - MPG Regression")
+```
+
+For regression models, predictions include the standard deviation within
+each terminal node, providing a measure of prediction uncertainty:
+
+```{r regression-predict}
+pred_reg <- predict(tree_reg, newdata = validation_reg)
+head(pred_reg)
+```
+
+Residuals are also available:
+
+```{r regression-residuals}
+res <- residuals(tree_reg)
+summary(res)
+```
+
+
+## Validation of the E2Tree Structure
+
+A fundamental question arises when using E2Tree: how well does the single
+interpretable tree capture the original ensemble's structure? The E2Tree
+reconstructs the ensemble's co-occurrence matrix $\mathbf{O}$ through
+its terminal node structure, producing an approximation
+$\hat{\mathbf{O}}_T$. Assessing the quality of this reconstruction is
+essential to ensure that the explanatory model faithfully represents
+the ensemble's decision logic.
+
+The `eValidation()` function provides two complementary approaches to
+validation, selectable through the `test` argument:
+
+- **`test = "mantel"`**: The Mantel test, a classical non-parametric
+  test of *association* between similarity matrices.
+- **`test = "measures"`**: A family of divergence and similarity measures
+  that assess *agreement* between the matrices, with permutation-based
+  inference.
+- **`test = "both"`** (default): Performs both.
+
+### Association vs. Agreement
+
+The distinction between these two approaches mirrors the classical
+distinction between *correlation* and *concordance* in method comparison
+studies (Bland & Altman, 1986; Lin, 1989). Two proximity matrices can be
+perfectly correlated ($r = 1$) and yet systematically disagree: if
+$\hat{\mathbf{O}}_T = c \cdot \mathbf{O}$ for any constant $c \neq 1$,
+the Mantel test would declare perfect association, yet the actual
+proximity values would not be faithfully reproduced.
+
+This distinction matters in the E2Tree context. The ensemble matrix
+$\mathbf{O}$ contains continuous values in $(0, 1)$, reflecting varying
+degrees of co-occurrence across the ensemble's trees. The E2Tree matrix
+$\hat{\mathbf{O}}_T$, by contrast, has a crisp block-diagonal structure:
+observations within the same terminal node share a common co-occurrence
+value, while observations in different nodes have zero co-occurrence.
+Even when the block structure perfectly matches the grouping pattern of
+$\mathbf{O}$, the element-wise values will differ because $\mathbf{O}$
+is fuzzy and $\hat{\mathbf{O}}_T$ is crisp. A scale-sensitive divergence
+measure can quantify this discrepancy; a correlation-based measure cannot.
+
+### The Mantel Test
+
+The Mantel test evaluates whether the E2Tree proximity matrix is
+*associated* with the ensemble proximity matrix. It computes a
+correlation-like statistic between the two matrices and assesses
+significance through permutation.
+
+```{r val-mantel}
+val_mantel <- eValidation(training, tree, D, test = "mantel", graph = FALSE)
+print(val_mantel)
+```
+
+A significant Mantel test confirms that E2Tree preserves the overall
+*pattern* of the ensemble's proximity structure. However, it does not
+tell us how closely the actual proximity values are reproduced, nor
+does it indicate *where* the reconstruction fails.
+
+### Divergence and Similarity Measures
+
+To assess *agreement* rather than mere association, we use a family of
+five measures, each capturing a distinct aspect of reconstruction quality:
+
+| Measure | Type | Range | What it captures |
+|---------|------|-------|------------------|
+| **nLoI** (normalized Loss of Interpretability) | divergence | [0, 1] | Scale-sensitive per-pair discrepancy with diagnostic decomposition |
+| **Hellinger** distance | divergence | [0, 1] | Variance-stabilized element-wise difference (a true metric) |
+| **wRMSE** (weighted Root Mean Squared Error) | divergence | [0, 1] | Weighted average discrepancy emphasizing high-proximity regions |
+| **RV** coefficient | similarity | [0, 1] | Global structural similarity (matrix-level correlation) |
+| **SSIM** (Structural Similarity Index) | similarity | [-1, 1] | Local spatial pattern similarity (luminance, contrast, structure) |
+
+For *divergence* measures, lower values indicate better reconstruction.
+For *similarity* measures, higher values indicate better reconstruction.
+
+Statistical significance is assessed through a unified permutation testing
+framework based on simultaneous row/column permutation of $\hat{\mathbf{O}}_T$.
+This preserves the block-diagonal structure of the E2Tree matrix while
+breaking the correspondence between observation labels and node assignments,
+providing the appropriate null hypothesis: under $H_0$, E2Tree groups
+observations randomly with respect to the ensemble structure.
+
+```{r val-measures}
+val_meas <- eValidation(training, tree, D, test = "measures",
+                        graph = FALSE, n_perm = 499)
+print(val_meas)
+```
+
+All divergence measures are significantly lower than their null
+expectations (negative Z-statistics), while all similarity measures are
+significantly higher (positive Z-statistics), confirming that the E2Tree
+faithfully reconstructs the ensemble's proximity structure.
+
+```{r val-measures-table}
+measures(val_meas)
+```
+
+### Visualizing the Reconstruction
+
+The `plot()` method for `eValidation` objects provides a visual summary
+including heatmaps of both proximity matrices, the null distribution of
+nLoI (when permutation tests are performed), and the LoI decomposition:
+
+```{r val-plot, fig.width = 8, fig.height = 7}
+val_full <- eValidation(training, tree, D, test = "both",
+                        graph = FALSE, n_perm = 499)
+plot(val_full)
+```
+
+### The Normalized Loss of Interpretability (nLoI)
+
+Among the divergence measures, the nLoI deserves special attention because
+of its unique *decomposability* into within-node and between-node components.
+
+The nLoI is defined as:
+$$\text{nLoI}(\mathbf{O}, \hat{\mathbf{O}}_T) = \frac{1}{M} \sum_{i<j} \frac{(o_{ij} - \hat{o}_{ij})^2}{\max(o_{ij}, \hat{o}_{ij})}$$
+where $M = n(n-1)/2$ is the number of unique pairs.
+
+This statistic is connected to the Cressie-Read power divergence family
+at $\lambda = -2$ (Neyman-type statistic), with a robustified denominator
+that avoids singularities when $\hat{o}_{ij} = 0$ (which is common in
+E2Tree due to the block-diagonal structure of $\hat{\mathbf{O}}_T$).
+
+The `loi()` function computes the nLoI and its decomposition directly
+from two proximity matrices:
+
+```{r loi-classification}
+prox <- proximity(val_full)
+result <- loi(prox$ensemble, prox$e2tree)
+summary(result)
+```
+
+#### LoI Decomposition: Diagnosing Reconstruction Quality
+
+The LoI decomposes into two interpretable components:
+
+- **Within-node component** ($\text{LoI}_{in}$): Measures reconstruction
+  fidelity for pairs that E2Tree groups together. It captures the
+  calibration error --- whether the single tree assigns co-occurrence
+  values that match the ensemble's.
+
+- **Between-node component** ($\text{LoI}_{out}$): Measures the cost of
+  the partition. It accumulates the ensemble co-occurrence values
+  ($o_{ij}$) for pairs that E2Tree separates into different terminal
+  nodes (where $\hat{o}_{ij} = 0$), representing irrecoverable loss.
+
+Since between-node pairs vastly outnumber within-node pairs (especially
+with many terminal nodes), the raw totals are not directly comparable.
+The per-pair averages (`mean_in` and `mean_out`) provide the meaningful
+diagnostic:
+
+- A **high `mean_out`** (e.g., > 0.3) indicates that E2Tree is separating
+  pairs with substantial ensemble proximity. The practitioner should
+  consider increasing the tree's complexity (more terminal nodes) or
+  relaxing pruning constraints.
+
+- A **high `mean_in`** (e.g., > 0.1) indicates poor within-node calibration:
+  the partition boundaries are well-placed, but the within-node proximity
+  values deviate from the ensemble's. This typically reflects the inherent
+  fuzzy-to-crisp structural transition.
+
+- **Low values of both** confirm that the E2Tree faithfully captures the
+  ensemble structure --- the partition is well-placed and the calibration
+  is accurate.
+
+This diagnostic capability is fundamentally impossible with the Mantel test
+or any other scalar association measure, which can only report that the
+overall reconstruction is "good" or "poor" without indicating the source
+of the discrepancy.
+
+```{r loi-plot}
+plot(result)
+```
+
+#### Permutation Test for LoI
+
+The `loi_perm()` function provides a standalone permutation test for the
+nLoI, useful when a quick assessment of reconstruction significance is
+needed without computing all five measures:
+
+```{r loi-perm}
+perm <- loi_perm(prox$ensemble, prox$e2tree, n_perm = 499, seed = 42)
+print(perm)
+plot(perm)
+```
+
+### Validation of the Regression Example
+
+The same validation framework applies to regression E2Trees:
+
+```{r val-regression}
+val_reg <- eValidation(training_reg, tree_reg, D_reg, test = "measures",
+                       graph = FALSE, n_perm = 499)
+print(val_reg)
+```
+
+Regression E2Trees typically show higher nLoI and Hellinger values than
+classification, consistent with the greater complexity of regression
+proximity structures and the typically smaller sample sizes. Nonetheless,
+all measures should achieve significant p-values, confirming that the
+reconstruction captures genuine structure.
+
+
+## Comparison with Related Packages
+
+The **e2tree** package complements existing R infrastructure for tree-based
+models:
+
+- **partykit**: Provides generic classes for representing trees. E2Tree
+  objects can be converted to `party` objects via `as.party()`, enabling
+  the use of partykit's rich visualization and prediction infrastructure.
+- **stablelearner**: Explores the stability of ensemble trees via
+  `stabletree()`. While stablelearner focuses on variable and cutpoint
+  stability, e2tree constructs a single tree that captures the ensemble's
+  dissimilarity-based structure --- a complementary perspective.
+- **rpart**: The standard recursive partitioning package. E2Tree objects can
+  be converted to `rpart` objects via `as.rpart()` for visualization with
+  `rpart.plot`.
+
+## Session Info
+
+```{r session-info}
+sessionInfo()
+```

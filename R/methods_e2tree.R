@@ -225,3 +225,163 @@ plot.e2tree <- function(x, ensemble = NULL, main = "E2Tree", ...) {
 
   invisible(rpart_obj)
 }
+
+
+#' Predict Responses from an E2Tree Model
+#'
+#' Predicts classification or regression responses for new data using the
+#' fitted E2Tree model.
+#'
+#' @param object An e2tree object.
+#' @param newdata A data frame containing the new observations. If missing,
+#'   the fitted values for the training data are returned.
+#' @param target Character string specifying the target class for computing
+#'   classification scores. Only used for classification trees. Default is
+#'   \code{NULL}, which uses the first level.
+#' @param ... Additional arguments (ignored).
+#'
+#' @return For regression: a data frame with columns \code{fit} (predicted
+#'   value) and \code{sd} (standard deviation of the response within the
+#'   terminal node, computed from the training data).
+#'   For classification: a data frame with columns \code{fit} (predicted class),
+#'   \code{accuracy} (probability of the predicted class), and \code{score}
+#'   (probability of the target class).
+#'
+#' @examples
+#' \donttest{
+#' data(iris)
+#' smp_size <- floor(0.75 * nrow(iris))
+#' train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+#' training <- iris[train_ind, ]
+#' validation <- iris[-train_ind, ]
+#'
+#' ensemble <- randomForest::randomForest(Species ~ ., data = training,
+#'   importance = TRUE, proximity = TRUE)
+#' D <- createDisMatrix(ensemble, data = training, label = "Species",
+#'   parallel = list(active = FALSE, no_cores = 1))
+#' setting <- list(impTotal = 0.1, maxDec = 0.01, n = 2, level = 5)
+#' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
+#'
+#' ## Predict on new data
+#' pred <- predict(tree, newdata = validation)
+#' }
+#'
+#' @method predict e2tree
+#' @export
+predict.e2tree <- function(object, newdata, target = NULL, ...) {
+  is_class <- !is.null(attr(object, "ylevels"))
+
+  if (missing(newdata) || is.null(newdata)) {
+    return(object$fitted.values)
+  }
+
+  if (is.null(target)) target <- "1"
+
+  result <- ePredTree(fit = object, data = newdata, target = target)
+
+  if (!is_class) {
+    # For regression: compute node-level sd from training data
+    tree_df <- object$tree
+    terminal <- tree_df[tree_df$terminal, , drop = FALSE]
+    y <- object$y
+
+    # Compute sd for each terminal node, keyed by node number
+    node_sd <- vapply(seq_len(nrow(terminal)), function(i) {
+      obs_idx <- unlist(terminal$obs[[i]])
+      if (length(obs_idx) < 2) return(0)
+      sd(y[obs_idx])
+    }, numeric(1))
+    names(node_sd) <- as.character(terminal$node)
+
+    # Build lookup: prediction value -> node number (handles duplicate preds)
+    pred_to_node <- setNames(as.character(terminal$node), as.character(terminal$pred))
+
+    # Map each prediction to its node's sd via pred value
+    # Use match on prediction values to find the correct terminal node
+    fit_vals <- as.numeric(result$fit)
+    sd_vec <- vapply(fit_vals, function(v) {
+      idx <- which(abs(as.numeric(terminal$pred) - v) < 1e-10)
+      if (length(idx) == 0) return(NA_real_)
+      node_sd[idx[1]]
+    }, numeric(1))
+
+    return(data.frame(
+      fit = fit_vals,
+      sd  = as.numeric(sd_vec),
+      row.names = NULL
+    ))
+  }
+
+  result
+}
+
+
+#' Extract Fitted Values from an E2Tree Model
+#'
+#' Returns the fitted values (predictions) for the training data used to
+#' build the E2Tree model.
+#'
+#' @param object An e2tree object.
+#' @param ... Additional arguments (ignored).
+#'
+#' @return A vector of fitted values.
+#'
+#' @examples
+#' \donttest{
+#' data(iris)
+#' smp_size <- floor(0.75 * nrow(iris))
+#' train_ind <- sample(seq_len(nrow(iris)), size = smp_size)
+#' training <- iris[train_ind, ]
+#'
+#' ensemble <- randomForest::randomForest(Species ~ ., data = training,
+#'   importance = TRUE, proximity = TRUE)
+#' D <- createDisMatrix(ensemble, data = training, label = "Species",
+#'   parallel = list(active = FALSE, no_cores = 1))
+#' setting <- list(impTotal = 0.1, maxDec = 0.01, n = 2, level = 5)
+#' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
+#'
+#' fitted(tree)
+#' }
+#'
+#' @method fitted e2tree
+#' @export
+fitted.e2tree <- function(object, ...) {
+  object$fitted.values
+}
+
+
+#' Extract Residuals from an E2Tree Model
+#'
+#' Returns the residuals (observed minus fitted) for regression E2Tree models.
+#' Not available for classification models.
+#'
+#' @param object An e2tree object.
+#' @param ... Additional arguments (ignored).
+#'
+#' @return A numeric vector of residuals.
+#'
+#' @examples
+#' \donttest{
+#' data("mtcars")
+#' smp_size <- floor(0.75 * nrow(mtcars))
+#' train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
+#' training <- mtcars[train_ind, ]
+#'
+#' ensemble <- randomForest::randomForest(mpg ~ ., data = training, ntree = 500,
+#'   importance = TRUE, proximity = TRUE)
+#' D <- createDisMatrix(ensemble, data = training, label = "mpg",
+#'   parallel = list(active = FALSE, no_cores = 1))
+#' setting <- list(impTotal = 0.1, maxDec = 1e-6, n = 2, level = 5)
+#' tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
+#'
+#' residuals(tree)
+#' }
+#'
+#' @method residuals e2tree
+#' @export
+residuals.e2tree <- function(object, ...) {
+  if (!is.null(attr(object, "ylevels"))) {
+    stop("Residuals are not available for classification E2Tree models.")
+  }
+  as.numeric(object$y) - as.numeric(object$fitted.values)
+}

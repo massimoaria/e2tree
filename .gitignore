@@ -10,3 +10,5 @@ Appunti/
 cran-comments.md
 .Rproj.user
 tests/testthat/*.pdf
+/doc/
+/Meta/

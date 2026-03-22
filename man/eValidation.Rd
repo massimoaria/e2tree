@@ -2,12 +2,13 @@
 % Please edit documentation in R/eValidation.R
 \name{eValidation}
 \alias{eValidation}
-\title{E2Tree Validation: Proximity Matrix Comparison}
+\title{Validate an E2Tree Model via Proximity Matrix Comparison}
 \usage{
 eValidation(
   data,
   fit,
   D,
+  test = c("both", "mantel", "measures"),
   graph = TRUE,
   n_perm = 999,
   conf.level = 0.95,
@@ -21,10 +22,15 @@ eValidation(
 
 \item{D}{The dissimilarity matrix obtained with \code{\link{createDisMatrix}}.}
 
+\item{test}{Character string specifying which tests to perform. One of
+\code{"both"} (default), \code{"mantel"} (Mantel test only), or
+\code{"measures"} (divergence/similarity measures with permutation tests only).}
+
 \item{graph}{Logical (default TRUE). If TRUE, heatmaps are displayed.}
 
-\item{n_perm}{Integer. Number of permutations for the unified permutation
-test. Default is 999. Set to 0 to skip permutation testing.}
+\item{n_perm}{Integer. Number of permutations for the permutation
+test on measures. Default is 999. Set to 0 to skip permutation testing.
+Ignored when \code{test = "mantel"}.}
 
 \item{conf.level}{Numeric. Confidence level for intervals. Default is 0.95.}
 
@@ -35,18 +41,17 @@ An object of class \code{"eValidation"} containing:
 \describe{
 \item{Proximity_matrix_ensemble}{Ensemble proximity matrix (reordered)}
 \item{Proximity_matrix_e2tree}{E2Tree proximity matrix (reordered)}
-\item{mantel_test}{Mantel test result}
-\item{loi}{LoI object with decomposition (see \code{\link{loi}})}
-\item{measures}{Data frame with all measures: nLoI, Hellinger, wRMSE, RV, SSIM}
-\item{permutation}{Permutation test results for all measures (if n_perm > 0)}
+\item{mantel_test}{Mantel test result (NULL if \code{test = "measures"})}
+\item{loi}{LoI object with decomposition (NULL if \code{test = "mantel"})}
+\item{measures}{Data frame with all measures (NULL if \code{test = "mantel"})}
+\item{permutation}{Permutation test results for measures (if applicable)}
 }
 }
 \description{
 Compares the ensemble proximity matrix with the E2Tree-estimated proximity
-matrix using multiple divergence and similarity measures. Performs the Mantel
-test and computes the Loss of Interpretability (LoI) with its diagnostic
-decomposition, plus Hellinger distance, weighted RMSE, RV coefficient, and
-SSIM.
+matrix using multiple divergence and similarity measures. Can perform the
+Mantel test, permutation tests on divergence/similarity measures (nLoI,
+Hellinger, wRMSE, RV, SSIM), or both.
 }
 \examples{
 \donttest{

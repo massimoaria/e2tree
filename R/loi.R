@@ -72,8 +72,9 @@
 #' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 #'
 #' vs <- eValidation(training, tree, D)
-#' O <- vs$Proximity_matrix_ensemble
-#' O_hat <- vs$Proximity_matrix_e2tree
+#' prox <- proximity(vs)
+#' O <- prox$ensemble
+#' O_hat <- prox$e2tree
 #'
 #' # Compute LoI with decomposition
 #' result <- loi(O, O_hat)

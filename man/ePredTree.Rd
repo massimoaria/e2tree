@@ -2,22 +2,25 @@
 % Please edit documentation in R/ePredTree.R
 \name{ePredTree}
 \alias{ePredTree}
-\title{Predict responses through an explainable RF}
+\title{Predict Responses Using an Explainable Ensemble Tree}
 \usage{
 ePredTree(fit, data, target = "1")
 }
 \arguments{
-\item{fit}{is a e2tree object}
+\item{fit}{An e2tree object.}
 
-\item{data}{is a data frame}
+\item{data}{A data frame with new observations.}
 
-\item{target}{is the target value of response in the classification case}
+\item{target}{Target class for classification scoring.}
 }
 \value{
-an object.
+A data frame with predictions.
 }
 \description{
-It predicts classification and regression tree responses
+Predicts classification and regression tree responses.
+}
+\details{
+\strong{Deprecated:} Use \code{\link{predict.e2tree}} instead.
 }
 \examples{
 \donttest{
@@ -42,7 +45,11 @@ D <- createDisMatrix(ensemble, data=training, label = "Species",
 setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 
-ePredTree(tree, validation, target="1")
+## Preferred method:
+predict(tree, newdata = validation, target = "1")
+
+## Legacy function (deprecated):
+ePredTree(tree, validation, target = "1")
 
 
 ## Regression
@@ -66,6 +73,10 @@ D = createDisMatrix(ensemble, data=training, label = "mpg",
 setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
 tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
 
+## Preferred method:
+predict(tree, newdata = validation)
+
+## Legacy function (deprecated):
 ePredTree(tree, validation)
 
 }

@@ -45,12 +45,11 @@ using rpart.plot. You can then click on any node to see:
 }
 }
 \examples{
-\dontrun{
-# After creating an e2tree object
-plot_e2tree_click(tree, training, ensemble)
-
-# Click on nodes to explore
-# Press ESC or right-click to exit
+\donttest{
+# After creating an e2tree object (requires interactive session)
+if (interactive()) {
+  plot_e2tree_click(tree, training, ensemble)
+}
 }
 
 }

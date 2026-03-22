@@ -356,12 +356,23 @@ e2tree <- function(formula, data, D, ensemble, setting=list(impTotal=0.1, maxDec
   
   
   object <- csplit_str(info,X,ncat, call=Call, terms=Terms, control=setting, ylevels=ylevels)
-  
-  #object$varimp <- vimp(object, data = data)
-  ###### DOESN'T WORK!!
-  
+
   object$N <- N
-  
+
+  ## Store fitted values and response for predict/fitted/residuals methods
+  n_obs <- length(response)
+  fv <- if (type == "classification") rep(NA_character_, n_obs) else rep(NA_real_, n_obs)
+  terminal_nodes <- info[info$terminal == TRUE, , drop = FALSE]
+  for (i in seq_len(nrow(terminal_nodes))) {
+    obs_idx <- unlist(terminal_nodes$obs[[i]])
+    if (length(obs_idx) > 0) fv[obs_idx] <- terminal_nodes$pred[i]
+  }
+  object$fitted.values <- fv
+  object$y <- response
+
+  ## Store training data for predict method
+  object$data <- data
+
   class(object) <- c("e2tree", "list")
   
   return(object)

@@ -1,7 +1,10 @@
 utils::globalVariables(c("n","prob", "terminal"))
-#' Convert e2tree into an rpart object
+#' Convert an E2Tree Object to rpart Format
 #'
-#' It converts an e2tree output into an rpart object.
+#' Converts an e2tree output into an rpart object.
+#'
+#' Note: \code{\link{as.rpart.e2tree}} is the preferred coercion method.
+#' This function is kept for backward compatibility.
 #'
 #' @param fit is e2tree object.
 #' @param ensemble is an ensemble tree object (for the moment ensemble works only with random forest objects).
@@ -48,46 +51,14 @@ utils::globalVariables(c("n","prob", "terminal"))
 #' setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
 #' tree <- e2tree(Species ~ ., training, D, ensemble, setting)
 #'
-#' # Convert e2tree into an rpart object:
-#' expl_plot <- rpart2Tree(tree, ensemble)
+#' ## Preferred coercion method:
+#' rpart_obj <- as.rpart(tree, ensemble)
+#'
+#' ## Legacy function (see as.rpart):
+#' rpart_obj <- rpart2Tree(tree, ensemble)
 #'
 #' # Plot using rpart.plot package:
-#' rpart.plot::rpart.plot(expl_plot)
-#' 
-#' 
-#' ## Regression
-#' data("mtcars")
-#' 
-#' # Create training and validation set:
-#' smp_size <- floor(0.75 * nrow(mtcars))
-#' train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
-#' training <- mtcars[train_ind, ]
-#' validation <- mtcars[-train_ind, ]
-#' response_training <- training[,1]
-#' response_validation <- validation[,1]
-#' 
-#' # Perform training
-#' ## "randomForest" package
-#' ensemble = randomForest::randomForest(mpg ~ ., data=training, ntree=1000, 
-#' importance=TRUE, proximity=TRUE)
-#' 
-#' ## "ranger" package
-#' if (requireNamespace("ranger", quietly = TRUE)) {
-#'   ensemble <- ranger::ranger(formula = mpg ~ ., data = training,
-#'     num.trees = 1000, importance = "permutation")
-#' }
-#'
-#' D = createDisMatrix(ensemble, data=training, label = "mpg",
-#'                        parallel = list(active=FALSE, no_cores = 1))
-#' 
-#' setting=list(impTotal=0.1, maxDec=(1*10^-6), n=2, level=5)
-#' tree <- e2tree(mpg ~ ., training, D, ensemble, setting)
-#' 
-#' # Convert e2tree into an rpart object:
-#' expl_plot <- rpart2Tree(tree, ensemble)
-#' 
-#' # Plot using rpart.plot package:
-#' rpart.plot::rpart.plot(expl_plot)
+#' rpart.plot::rpart.plot(rpart_obj)
 #' 
 #'}
 #' @export

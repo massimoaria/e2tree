@@ -2,7 +2,7 @@
 % Please edit documentation in R/roc.R
 \name{roc}
 \alias{roc}
-\title{Roc curve}
+\title{ROC Curve}
 \usage{
 roc(response, scores, target = "1")
 }

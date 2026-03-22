@@ -2,13 +2,13 @@
 # Utility functions shared across the e2tree package
 # ============================================================================
 
-#' Population variance (divides by n, not n-1)
+#' Population Variance
 #' @keywords internal
 e2_variance <- function(x) {
   sum((x - mean(x))^2) / length(x)
 }
 
-#' Determine the ensemble type from a trained model
+#' Determine Ensemble Type from a Trained Model
 #' @param ensemble A trained randomForest or ranger model
 #' @return Character string: "classification" or "regression"
 #' @keywords internal
@@ -22,7 +22,7 @@ get_ensemble_type <- function(ensemble) {
   }
 }
 
-#' Check that required packages are available (for Suggests dependencies)
+#' Check Availability of Suggested Packages
 #' @keywords internal
 check_package <- function(pkg) {
   if (!requireNamespace(pkg, quietly = TRUE)) {

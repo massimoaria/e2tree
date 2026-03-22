@@ -1,19 +1,22 @@
 utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse programming
 
-#' E2Tree Validation: Proximity Matrix Comparison
+#' Validate an E2Tree Model via Proximity Matrix Comparison
 #'
 #' Compares the ensemble proximity matrix with the E2Tree-estimated proximity
-#' matrix using multiple divergence and similarity measures. Performs the Mantel
-#' test and computes the Loss of Interpretability (LoI) with its diagnostic
-#' decomposition, plus Hellinger distance, weighted RMSE, RV coefficient, and
-#' SSIM.
+#' matrix using multiple divergence and similarity measures. Can perform the
+#' Mantel test, permutation tests on divergence/similarity measures (nLoI,
+#' Hellinger, wRMSE, RV, SSIM), or both.
 #'
 #' @param data A data frame containing the variables in the model.
 #' @param fit An e2tree object.
 #' @param D The dissimilarity matrix obtained with \code{\link{createDisMatrix}}.
+#' @param test Character string specifying which tests to perform. One of
+#'   \code{"both"} (default), \code{"mantel"} (Mantel test only), or
+#'   \code{"measures"} (divergence/similarity measures with permutation tests only).
 #' @param graph Logical (default TRUE). If TRUE, heatmaps are displayed.
-#' @param n_perm Integer. Number of permutations for the unified permutation
-#'   test. Default is 999. Set to 0 to skip permutation testing.
+#' @param n_perm Integer. Number of permutations for the permutation
+#'   test on measures. Default is 999. Set to 0 to skip permutation testing.
+#'   Ignored when \code{test = "mantel"}.
 #' @param conf.level Numeric. Confidence level for intervals. Default is 0.95.
 #' @param seed Integer or NULL. Random seed for reproducibility.
 #'
@@ -21,10 +24,10 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 #'   \describe{
 #'     \item{Proximity_matrix_ensemble}{Ensemble proximity matrix (reordered)}
 #'     \item{Proximity_matrix_e2tree}{E2Tree proximity matrix (reordered)}
-#'     \item{mantel_test}{Mantel test result}
-#'     \item{loi}{LoI object with decomposition (see \code{\link{loi}})}
-#'     \item{measures}{Data frame with all measures: nLoI, Hellinger, wRMSE, RV, SSIM}
-#'     \item{permutation}{Permutation test results for all measures (if n_perm > 0)}
+#'     \item{mantel_test}{Mantel test result (NULL if \code{test = "measures"})}
+#'     \item{loi}{LoI object with decomposition (NULL if \code{test = "mantel"})}
+#'     \item{measures}{Data frame with all measures (NULL if \code{test = "mantel"})}
+#'     \item{permutation}{Permutation test results for measures (if applicable)}
 #'   }
 #'
 #' @examples
@@ -51,10 +54,12 @@ utils::globalVariables("tree") # to avoid CRAN check errors for tidyverse progra
 #' }
 #'
 #' @export
-eValidation <- function(data, fit, D, graph = TRUE,
+eValidation <- function(data, fit, D, test = c("both", "mantel", "measures"),
+                        graph = TRUE,
                         n_perm = 999, conf.level = 0.95, seed = NULL) {
 
   if (!is.null(seed)) set.seed(seed)
+  test <- match.arg(test)
 
   # === Input Validation ===
   if (!is.data.frame(data) || nrow(data) == 0) {
@@ -98,13 +103,16 @@ eValidation <- function(data, fit, D, graph = TRUE,
   colnames(Ps_ord) <- ord
 
   # === Mantel test ===
-  mantel_test <- ape::mantel.test(
-    Ps_ord,
-    1 - D_exp[ord, ord],
-    graph = graph,
-    main = "Mantel test",
-    xlab = "z-statistic", ylab = "Density"
-  )
+  mantel_test <- NULL
+  if (test %in% c("both", "mantel")) {
+    mantel_test <- ape::mantel.test(
+      Ps_ord,
+      1 - D_exp[ord, ord],
+      graph = graph,
+      main = "Mantel test",
+      xlab = "z-statistic", ylab = "Density"
+    )
+  }
 
   # === Clamp to [0,1] and compute proximity matrices ===
   Ps_ord <- pmin(pmax(Ps_ord, 0), 1)
@@ -117,34 +125,39 @@ eValidation <- function(data, fit, D, graph = TRUE,
     e2heatmap(prox_ens)
   }
 
-  # === Compute all measures ===
-  O <- prox_ens
-  O_hat <- prox_e2tree
-
-  loi_result <- loi(O, O_hat)
-
-  hellinger_val <- .e2val_hellinger(O, O_hat)
-  wrmse_val     <- .e2val_wrmse(O, O_hat)
-  rv_val        <- .e2val_rv(O, O_hat)
-  ssim_val      <- .e2val_ssim(O, O_hat)
-
-  measures <- data.frame(
-    method   = c("nLoI", "Hellinger", "wRMSE", "RV", "SSIM"),
-    type     = c("divergence", "divergence", "divergence", "similarity", "similarity"),
-    observed = c(loi_result$nloi, hellinger_val, wrmse_val, rv_val, ssim_val),
-    stringsAsFactors = FALSE
-  )
-
-  # === Permutation test (unified, row/column) ===
+  # === Compute divergence/similarity measures ===
+  loi_result <- NULL
+  measures_df <- NULL
   perm_result <- NULL
-  if (n_perm > 0) {
-    perm_result <- .e2val_unified_perm(O, O_hat, n_perm, conf.level)
-    measures$null_mean <- perm_result$null_means
-    measures$null_sd   <- perm_result$null_sds
-    measures$z_stat    <- perm_result$z_stats
-    measures$p_value   <- perm_result$p_values
-    measures$ci_lower  <- perm_result$ci_lower
-    measures$ci_upper  <- perm_result$ci_upper
+
+  if (test %in% c("both", "measures")) {
+    O <- prox_ens
+    O_hat <- prox_e2tree
+
+    loi_result <- loi(O, O_hat)
+
+    hellinger_val <- .e2val_hellinger(O, O_hat)
+    wrmse_val     <- .e2val_wrmse(O, O_hat)
+    rv_val        <- .e2val_rv(O, O_hat)
+    ssim_val      <- .e2val_ssim(O, O_hat)
+
+    measures_df <- data.frame(
+      method   = c("nLoI", "Hellinger", "wRMSE", "RV", "SSIM"),
+      type     = c("divergence", "divergence", "divergence", "similarity", "similarity"),
+      observed = c(loi_result$nloi, hellinger_val, wrmse_val, rv_val, ssim_val),
+      stringsAsFactors = FALSE
+    )
+
+    # === Permutation test (unified, row/column) ===
+    if (n_perm > 0) {
+      perm_result <- .e2val_unified_perm(O, O_hat, n_perm, conf.level)
+      measures_df$null_mean <- perm_result$null_means
+      measures_df$null_sd   <- perm_result$null_sds
+      measures_df$z_stat    <- perm_result$z_stats
+      measures_df$p_value   <- perm_result$p_values
+      measures_df$ci_lower  <- perm_result$ci_lower
+      measures_df$ci_upper  <- perm_result$ci_upper
+    }
   }
 
   # === Build result ===
@@ -153,11 +166,12 @@ eValidation <- function(data, fit, D, graph = TRUE,
     Proximity_matrix_e2tree   = prox_e2tree,
     mantel_test               = mantel_test,
     loi                       = loi_result,
-    measures                  = measures,
+    measures                  = measures_df,
     permutation               = perm_result,
     n                         = n,
     n_perm                    = n_perm,
-    conf.level                = conf.level
+    conf.level                = conf.level,
+    test                      = test
   )
   class(results) <- "eValidation"
   results
@@ -362,55 +376,64 @@ print.eValidation <- function(x, digits = 4, ...) {
   cat(sprintf("  Matrix dimension:    %d x %d\n", x$n, x$n))
   cat(sprintf("  Pairs:               %d\n", x$n * (x$n - 1) / 2))
 
-  # Mantel
-  cat(sprintf("\n  Mantel test:         z = %.2f, p = %.4f\n",
-              x$mantel_test$z.stat, x$mantel_test$p))
+  # Mantel test
+  if (!is.null(x$mantel_test)) {
+    cat(sprintf("\n  Mantel test:         z = %.2f, p = %.4f\n",
+                x$mantel_test$z.stat, x$mantel_test$p))
+  }
 
   # Measures table
-  cat("\n------------------------------------------------------------------------------\n")
-  cat("  Measure          Type        Observed")
-  if (!is.null(x$permutation)) cat("    Null mean    Z-stat     p-value")
-  cat("\n")
-  cat("------------------------------------------------------------------------------\n")
+  if (!is.null(x$measures)) {
+    tbl <- x$measures
 
-  tbl <- x$measures
-  for (i in seq_len(nrow(tbl))) {
-    dir <- if (tbl$type[i] == "divergence") "[div]" else "[sim]"
+    cat("\n------------------------------------------------------------------------------\n")
+    cat("  Measure          Type        Observed")
+    if (!is.null(x$permutation)) cat("    Null mean    Z-stat     p-value")
+    cat("\n")
+    cat("------------------------------------------------------------------------------\n")
 
-    line <- sprintf("  %-14s %s   %8.*f",
-                    tbl$method[i], dir, digits, tbl$observed[i])
+    for (i in seq_len(nrow(tbl))) {
+      dir <- if (tbl$type[i] == "divergence") "[div]" else "[sim]"
+
+      line <- sprintf("  %-14s %s   %8.*f",
+                      tbl$method[i], dir, digits, tbl$observed[i])
+
+      if (!is.null(x$permutation)) {
+        stars <- if (tbl$p_value[i] < 0.001) "***"
+                 else if (tbl$p_value[i] < 0.01) "**"
+                 else if (tbl$p_value[i] < 0.05) "*"
+                 else if (tbl$p_value[i] < 0.1) "."
+                 else ""
+
+        p_str <- if (tbl$p_value[i] < 0.0001) "< 0.0001"
+                 else sprintf("%.*f", digits, tbl$p_value[i])
+
+        line <- paste0(line, sprintf("   %8.*f   %+8.2f   %s %s",
+                                      digits, tbl$null_mean[i],
+                                      tbl$z_stat[i], p_str, stars))
+      }
+      cat(line, "\n")
+    }
+    cat("------------------------------------------------------------------------------\n")
 
     if (!is.null(x$permutation)) {
-      stars <- if (tbl$p_value[i] < 0.001) "***"
-               else if (tbl$p_value[i] < 0.01) "**"
-               else if (tbl$p_value[i] < 0.05) "*"
-               else if (tbl$p_value[i] < 0.1) "."
-               else ""
-
-      p_str <- if (tbl$p_value[i] < 0.0001) "< 0.0001"
-               else sprintf("%.*f", digits, tbl$p_value[i])
-
-      line <- paste0(line, sprintf("   %8.*f   %+8.2f   %s %s",
-                                    digits, tbl$null_mean[i],
-                                    tbl$z_stat[i], p_str, stars))
+      cat(sprintf("  Permutations: %d (row/column), conf.level: %d%%\n",
+                  x$n_perm, round(x$conf.level * 100)))
     }
-    cat(line, "\n")
+
+    # LoI decomposition summary
+    if (!is.null(x$loi)) {
+      lo <- x$loi
+      cat(sprintf("\n  LoI Decomposition (per-pair avg):  mean_in = %.6f,  mean_out = %.6f\n",
+                  lo$mean_in, lo$mean_out))
+    }
+
+    cat("\n")
+    cat("  [div] = divergence (lower=better), [sim] = similarity (higher=better)\n")
+    cat("  Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1\n")
   }
-  cat("------------------------------------------------------------------------------\n")
 
-  if (!is.null(x$permutation)) {
-    cat(sprintf("  Permutations: %d (row/column), conf.level: %d%%\n",
-                x$n_perm, round(x$conf.level * 100)))
-  }
-
-  # LoI decomposition summary
-  lo <- x$loi
-  cat(sprintf("\n  LoI Decomposition (per-pair avg):  mean_in = %.6f,  mean_out = %.6f\n",
-              lo$mean_in, lo$mean_out))
-
-  cat("\n##############################################################################\n")
-  cat("  [div] = divergence (lower=better), [sim] = similarity (higher=better)\n")
-  cat("  Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1\n\n")
+  cat("\n##############################################################################\n\n")
 
   invisible(x)
 }
@@ -425,8 +448,10 @@ print.eValidation <- function(x, digits = 4, ...) {
 summary.eValidation <- function(object, digits = 4, ...) {
 
   print(object, digits = digits, ...)
-  cat("\n")
-  summary(object$loi, digits = digits)
+  if (!is.null(object$loi)) {
+    cat("\n")
+    summary(object$loi, digits = digits)
+  }
 
   invisible(object)
 }
@@ -444,13 +469,17 @@ plot.eValidation <- function(x, ...) {
   on.exit(par(old_par))
 
   has_perm <- !is.null(x$permutation)
+  has_measures <- !is.null(x$measures)
 
-  if (has_perm) {
-    # 2x2 layout: heatmaps + null dists + decomposition
+  # Determine layout based on available components
+  n_panels <- 2L  # always show heatmaps
+  if (has_measures && has_perm) n_panels <- 4L
+  else if (has_measures) n_panels <- 3L
+
+  if (n_panels == 4L) {
     layout(matrix(c(1, 2, 3, 4), 2, 2, byrow = TRUE))
   } else {
-    # 1x3 layout: heatmaps + decomposition
-    par(mfrow = c(1, 3))
+    par(mfrow = c(1, n_panels))
   }
 
   par(mar = c(4, 4, 3, 1))
@@ -467,7 +496,7 @@ plot.eValidation <- function(x, ...) {
         col = colorRampPalette(c("white", "black"))(100),
         axes = FALSE, xlab = "", ylab = "")
 
-  if (has_perm) {
+  if (has_measures && has_perm) {
     # --- Panel 3: Null distribution of nLoI ---
     null_nloi <- x$permutation$null_dists[1, ]
     obs_nloi <- x$measures$observed[1]
@@ -493,18 +522,20 @@ plot.eValidation <- function(x, ...) {
            bty = "n", cex = 0.85)
   }
 
-  # --- Panel 3/4: LoI Decomposition (per-pair) ---
-  lo <- x$loi
-  means <- c(lo$mean_in, lo$mean_out)
-  nms <- c("Within\n(mean_in)", "Between\n(mean_out)")
-  cols <- c("#3498db", "#e74c3c")
+  # --- LoI Decomposition (per-pair) ---
+  if (has_measures && !is.null(x$loi)) {
+    lo <- x$loi
+    means <- c(lo$mean_in, lo$mean_out)
+    nms <- c("Within\n(mean_in)", "Between\n(mean_out)")
+    cols <- c("#3498db", "#e74c3c")
 
-  bp <- barplot(means, names.arg = nms, col = cols, border = NA,
-                main = sprintf("Per-Pair Average Loss\nnLoI = %.4f", lo$nloi),
-                ylab = "Mean loss per pair",
-                ylim = c(0, max(means) * 1.35))
-  text(bp, means, labels = sprintf("%.4f", means),
-       pos = 3, cex = 0.9, font = 2)
+    bp <- barplot(means, names.arg = nms, col = cols, border = NA,
+                  main = sprintf("Per-Pair Average Loss\nnLoI = %.4f", lo$nloi),
+                  ylab = "Mean loss per pair",
+                  ylim = c(0, max(means) * 1.35))
+    text(bp, means, labels = sprintf("%.4f", means),
+         pos = 3, cex = 0.9, font = 2)
+  }
 }
 
 

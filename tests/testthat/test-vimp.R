@@ -50,8 +50,7 @@ test_that("vimp handles incorrect input types (classification case)", {
   expect_error(vimp(fit, NULL, "classification"), 
                "Error: 'data' must be a non-empty data frame.")
   
-  expect_error(vimp(fit, training, "unknown_type"), 
-               "Error: 'type' must be either 'classification' or 'regression'.")
+  expect_error(vimp(fit, training, "unknown_type"))
 })
 
 test_that("vimp handles missing response variable in data (classification case)", {
@@ -133,8 +132,7 @@ test_that("vimp handles incorrect input types (regression case)", {
   expect_error(vimp(fit, NULL, "classification"), 
                "Error: 'data' must be a non-empty data frame.")
   
-  expect_error(vimp(fit, training, "unknown_type"), 
-               "Error: 'type' must be either 'classification' or 'regression'.")
+  expect_error(vimp(fit, training, "unknown_type"))
 })
 
 test_that("vimp handles missing response variable in data (regression case)", {

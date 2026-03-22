@@ -51,7 +51,23 @@ utils::globalVariables(".")
 #' @importFrom utils globalVariables head setTxtProgressBar tail txtProgressBar
 #' @useDynLib e2tree
 #'
-.onAttach<-function(...){
+.onLoad <- function(libname, pkgname) {
+  # Conditionally register as.party method for partykit
+  register_partykit_method <- function(...) {
+    if (requireNamespace("partykit", quietly = TRUE)) {
+      registerS3method("as.party", "e2tree", as.party.e2tree,
+                       envir = asNamespace("partykit"))
+    }
+  }
+  setHook(packageEvent("partykit", "onLoad"), register_partykit_method)
+  # Also register now if partykit is already loaded
+  if (isNamespaceLoaded("partykit")) {
+    registerS3method("as.party", "e2tree", as.party.e2tree,
+                     envir = asNamespace("partykit"))
+  }
+}
+
+.onAttach <- function(...) {
   packageStartupMessage("Explainable Ensemble Trees (E2Tree) \n\n",
                         "If you use e2tree in research, please cite: \n\n",
                         "- Aria, M., Gnasso, A., Iorio, C., & Pandolfo, G. (2024). Explainable ensemble trees.\nComputational Statistics, 39(1), 3-19. DOI: 10.1007/s00180-022-01312-6\n\n",
