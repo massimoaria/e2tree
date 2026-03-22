@@ -69,24 +69,27 @@ theme_set(
 knitr::opts_chunk$set(dev.args = list(bg = "transparent"))
 ```
 
-## Warning
 
-This package is still under development and, for the time being, the following limitations apply:
+## S3 Classes and Methods
 
-- Only ensembles trained with the **randomForest** and **ranger** packages are currently supported. Support for additional packages and approaches will be added in the future.
+The **e2tree** package uses a proper S3 class system. The main classes and their associated methods are:
 
-- Currently **e2tree** works only for classification and regression problems. It will gradually be extended to handle other types of response variables, such as count data, multivariate responses, and more.
+| Class | Methods |
+|-------|---------|
+| `e2tree` | `print`, `summary`, `plot`, `predict`, `fitted`, `residuals`, `as.rpart`, `nodes`, `e2splits` |
+| `eValidation` | `print`, `summary`, `plot`, `measures`, `proximity` |
+| `loi` | `print`, `summary`, `plot` |
+| `loi_perm` | `print`, `summary`, `plot` |
+
+E2Tree objects can also be converted to other formats for interoperability:
+
+- `as.rpart()` converts to `rpart` format for use with `rpart.plot`
+- `as.party()` converts to `partykit`'s `constparty` format (if partykit is installed)
 
 
-## Example 1: IRIS dataset
+## Example 1: IRIS dataset (Classification)
 
-In this example, we want to show the main functions of the e2tree package.
-
-Starting from the IRIS dataset, we will train an ensemble tree using the randomForest package and then subsequently use e2tree to obtain an explainable tree synthesis of the ensemble classifier.
-We run a Random Forest (RF) model, and then obtain the proximity matrix of the observations as output. The idea behind the proximity matrix: if a pair of observations is often at a terminal node of several trees, this means that both explain an underlying relationship.
-From this we are able to calculate co-occurrences at nodes between pairs of observations and obtain a matrix O of Co-Occurrences that will then be used to construct the graphical E2Tree output.
-The final aim will be to explain the relationship between predictors and response, reconstructing the same structure as the proximity matrix output of the RF model.
-
+Starting from the IRIS dataset, we train an ensemble tree using the randomForest package and then use e2tree to obtain an explainable tree synthesis of the ensemble classifier.
 
 ```{r}
 # Set random seed to make results reproducible:
@@ -115,22 +118,16 @@ ensemble <- ranger(Species ~ ., data = training, num.trees = 1000, importance = 
 #ensemble = randomForest(Species ~ ., data = training, importance = TRUE, proximity = TRUE)
 ```
 
-Here, we create the dissimilarity matrix between observations through the createDisMatrix function
+Create the dissimilarity matrix between observations:
 
 ```{r}
 D = createDisMatrix(ensemble, data = training, label = "Species", parallel = list(active = FALSE, no_cores = NULL))
 ```
 
-Setting e2tree parameters
+Build an explainable tree for RF:
 
 ```{r}
 setting=list(impTotal=0.1, maxDec=0.01, n=2, level=5)
-```
-
-
-Build an explainable tree for RF
-
-```{r}
 tree <- e2tree(Species ~ ., data = training, D, ensemble, setting)
 ```
 
@@ -139,41 +136,73 @@ tree <- e2tree(Species ~ ., data = training, D, ensemble, setting)
 
 The `e2tree` class supports standard S3 methods for inspecting the fitted model:
 
-**Print** — compact model overview:
+**Print** --- compact model overview:
 
 ```{r}
 print(tree)
 ```
 
-**Summary** — full model details including terminal nodes and decision rules:
+**Summary** --- full model details including terminal nodes and decision rules:
 
 ```{r}
 summary(tree)
 ```
 
-**Plot** — tree visualization via `rpart.plot`:
+**Plot** --- tree visualization via `rpart.plot`:
 
 ```{r}
 plot(tree, ensemble)
 ```
 
+### Accessor functions
+
+Accessor functions provide a clean interface to extract components without exposing the internal structure:
+
+```{r}
+# Extract terminal nodes
+nodes(tree, terminal = TRUE)
+
+# Extract split information
+str(e2splits(tree), max.level = 1)
+```
+
+### Coercion to other formats
+
+E2Tree objects can be converted to standard tree formats for use with other packages:
+
+```{r}
+# Convert to rpart format
+rpart_obj <- as.rpart(tree, ensemble)
+
+# Convert to partykit format (if installed)
+if (requireNamespace("partykit", quietly = TRUE)) {
+  party_obj <- partykit::as.party(tree)
+  plot(party_obj)
+}
+```
+
 
 ### Prediction
 
-Prediction with the new tree (example on training)
+Use the standard `predict()` method for prediction on new data:
 
 ```{r}
-pred <- ePredTree(tree, training[,-5], target="virginica")
+# Predict on validation set
+pred <- predict(tree, newdata = validation, target = "virginica")
+head(pred)
 ```
 
 Comparison of predictions (training sample) of RF and e2tree
 
 ```{r}
+# Training predictions
+pred_train <- predict(tree, newdata = training, target = "virginica")
+
 # "ranger" package
-table(pred$fit, ensemble$predictions)
+table(pred_train$fit, ensemble$predictions)
 
 # "randomForest" package
-#table(pred$fit, ensemble$predicted)
+#table(pred_train$fit, ensemble$predicted)
 ```
 
 Comparison of predictions (training sample) of RF and correct response
@@ -189,27 +218,37 @@ table(ensemble$predictions, response_training)
 Comparison of predictions (training sample) of e2tree and correct response
 
 ```{r}
-table(pred$fit,response_training)
+table(pred_train$fit, response_training)
 ```
 
-Variable Importance
+Fitted values for the training data:
+
+```{r}
+head(fitted(tree))
+```
+
+
+### Variable importance
+
+Variable importance is automatically detected as classification or regression:
 
 ```{r}
 V <- vimp(tree, training)
-V
-
+V$vimp
+V$g_imp
+V$g_acc
 ```
 
 
-Comparison with the validation sample
+### Prediction on validation sample
 
 ```{r}
 ensemble.pred <- predict(ensemble, validation[,-5])
 
-pred_val<- ePredTree(tree, validation[,-5], target="virginica")
+pred_val <- predict(tree, newdata = validation, target = "virginica")
 ```
 
-Comparison of predictions (sample validation) of RF and e2tree
+Comparison of predictions (validation sample) of RF and e2tree
 
 ```{r}
 ## "ranger" package
@@ -229,61 +268,82 @@ roc_res$auc
 ```
 
 
-## Validation: Measuring Reconstruction Quality
+## Validation of the E2Tree Structure
 
-A critical question when using E2Tree is: *how well does the single tree capture the structure of the original ensemble?* This is a question of **agreement** (do the proximity values match?) rather than mere **association** (is the pattern correlated?).
+A critical question when using E2Tree is: *how well does the single tree capture the structure of the original ensemble?*
 
-The `eValidation()` function provides a comprehensive validation framework that computes multiple divergence and similarity measures, each capturing a different aspect of reconstruction quality:
+Assessing the fidelity of this reconstruction requires measuring **agreement** between the ensemble and E2Tree proximity matrices --- a fundamentally different question from measuring their **association**. The distinction parallels the classical one between *correlation* and *concordance* in method comparison studies (Bland & Altman, 1986; Lin, 1989): two proximity matrices can be perfectly correlated yet systematically disagree in their actual values. The Mantel test, being scale-invariant, would declare perfect association in such a case. But for E2Tree validation, we need to know whether the *actual proximity values* are faithfully reproduced.
+
+The `eValidation()` function supports two approaches via the `test` argument:
+
+- `test = "mantel"`: The classical Mantel test for *association*
+- `test = "measures"`: A family of divergence/similarity measures for *agreement*
+- `test = "both"` (default): Both approaches
+
+### Divergence and similarity measures
 
 | Measure | Type | Range | What it measures |
 |---------|------|-------|------------------|
-| **nLoI** | divergence | [0, 1] | Normalized Loss of Interpretability — weighted divergence with diagnostic decomposition |
-| **Hellinger** | divergence | [0, 1] | Hellinger distance — robust to sparse matrices |
-| **wRMSE** | divergence | [0, 1] | Weighted RMSE — emphasizes high-proximity regions |
-| **RV** | similarity | [0, 1] | RV coefficient — global structural similarity (scale-invariant) |
-| **SSIM** | similarity | [-1, 1] | Structural Similarity Index — captures local block patterns |
+| **nLoI** | divergence | [0, 1] | Normalized Loss of Interpretability --- weighted divergence with diagnostic decomposition |
+| **Hellinger** | divergence | [0, 1] | Hellinger distance --- robust to sparse matrices |
+| **wRMSE** | divergence | [0, 1] | Weighted RMSE --- emphasizes high-proximity regions |
+| **RV** | similarity | [0, 1] | RV coefficient --- global structural similarity (scale-invariant) |
+| **SSIM** | similarity | [-1, 1] | Structural Similarity Index --- captures local block patterns |
 
-All measures are tested simultaneously using a **unified row/column permutation test** with a single set of permutations.
+All measures are tested simultaneously using a **unified row/column permutation test**.
 
 
 ### Running the validation
 
 ```{r}
-val <- eValidation(training, tree, D, graph = FALSE, n_perm = 999, seed = 42)
+val <- eValidation(training, tree, D, test = "both", graph = FALSE, n_perm = 999, seed = 42)
 ```
 
-**Print** — compact results table with all measures and permutation test:
+**Print** --- compact results with Mantel test and all measures:
 
 ```{r}
 print(val)
 ```
 
-**Summary** — includes the LoI diagnostic decomposition:
+**Summary** --- includes the LoI diagnostic decomposition:
 
 ```{r}
 summary(val)
 ```
 
-**Plot** — heatmaps, null distribution, and LoI decomposition:
+**Plot** --- heatmaps, null distribution, and LoI decomposition:
 
 ```{r fig.width=10, fig.height=8}
 plot(val)
 ```
 
+### Extracting results with accessors
 
-### The LoI Decomposition
+Use accessor functions instead of direct `$` access:
 
-The key diagnostic feature of the nLoI is its **decomposability** into two components:
+```{r}
+# Validation measures table
+measures(val)
+
+# Proximity matrices
+prox <- proximity(val, type = "both")
+str(prox, max.level = 1)
+```
+
+
+### The nLoI Decomposition
+
+The nLoI is unique among the measures because it decomposes into two interpretable components:
 
 - **LoI_in** (within-node): measures how well the E2Tree reproduces the ensemble's proximity values for pairs it groups *together*.
 
 - **LoI_out** (between-node): measures the ensemble proximity lost for pairs that E2Tree *separates* into different nodes.
 
-Since the number of within-node and between-node pairs can differ dramatically (between-node pairs typically outnumber within-node pairs by a large factor), the raw totals are **not directly comparable**. The `loi()` function reports **per-pair averages** (`mean_in` and `mean_out`) that enable meaningful comparison:
+Since the number of within-node and between-node pairs can differ dramatically, the `loi()` function reports **per-pair averages** (`mean_in` and `mean_out`) that enable meaningful comparison:
 
 ```{r}
-O <- val$Proximity_matrix_ensemble
-O_hat <- val$Proximity_matrix_e2tree
+O <- proximity(val, type = "ensemble")
+O_hat <- proximity(val, type = "e2tree")
 
 result <- loi(O, O_hat)
 summary(result)
@@ -291,15 +351,15 @@ summary(result)
 
 The per-pair averages provide actionable diagnostics:
 
-- **mean_out > 0.3**: the tree is splitting apart pairs with substantial ensemble proximity — consider more terminal nodes
-- **mean_out < 0.1**: the partition correctly separates low-proximity pairs — tree structure is well-placed
-- **mean_in > 0.1**: within-node calibration error is high — check proximity estimation
+- **mean_out > 0.3**: the tree is splitting apart pairs with substantial ensemble proximity --- consider more terminal nodes
+- **mean_out < 0.1**: the partition correctly separates low-proximity pairs --- tree structure is well-placed
+- **mean_in > 0.1**: within-node calibration error is high --- check proximity estimation
 - **mean_in < 0.01**: excellent within-node match between E2Tree and ensemble
 
 
 ### Standalone LoI permutation test
 
-For a standalone permutation test with detailed output:
+For a quick significance assessment:
 
 ```{r}
 perm <- loi_perm(O, O_hat, n_perm = 999, seed = 42)
