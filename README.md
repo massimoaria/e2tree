@@ -228,10 +228,6 @@ summary(tree)
 
 ``` r
 plot(tree, ensemble)
-#> Warning: Cannot retrieve the data used to build the model (so cannot determine roundint and is.binary for the variables).
-#> To silence this warning:
-#>     Call rpart.plot with roundint=FALSE,
-#>     or rebuild the rpart model with model=TRUE.
 ```
 
 <img src="man/figures/README-unnamed-chunk-11-1.png" alt="" width="100%" />

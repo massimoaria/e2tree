@@ -220,6 +220,7 @@ plot.e2tree <- function(x, ensemble = NULL, main = "E2Tree", ...) {
     box.palette = if (is_class) "auto" else "Blues",
     shadow.col = "gray",
     nn = TRUE,
+    roundint = FALSE,
     ...
   )
 

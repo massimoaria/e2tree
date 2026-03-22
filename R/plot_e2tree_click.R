@@ -291,9 +291,10 @@ plot_e2tree_click <- function(fit, data, ensemble,
     box.palette = if(is_classification) "auto" else "Blues",
     shadow.col = "gray",
     nn = TRUE,  # Show node numbers
+    roundint = FALSE,
     ...
   )
-  
+
   # Get node positions
   node_pos <- get_node_positions(rpart_obj)
   
@@ -363,10 +364,11 @@ plot_e2tree_click <- function(fit, data, ensemble,
       box.palette = if(is_classification) "auto" else "Blues",
       shadow.col = "gray",
       nn = TRUE,
+      roundint = FALSE,
       ...
     )
   }
-  
+
   invisible(rpart_obj)
 }
 
@@ -409,9 +411,10 @@ plot_e2tree <- function(fit, ensemble, main = "E2Tree", ...) {
     box.palette = if(is_classification) "auto" else "Blues",
     shadow.col = "gray",
     nn = TRUE,
+    roundint = FALSE,
     ...
   )
-  
+
   invisible(rpart_obj)
 }
 
